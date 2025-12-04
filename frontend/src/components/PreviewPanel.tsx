@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Copy, FileJson, FileSpreadsheet, FileCode, Check, Table, Code } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { DataField } from '@/lib/api'
+import { exportToJson, exportToCsv, exportToSql, downloadBlob } from '@/lib/api'
 
 interface PreviewPanelProps {
   data: Record<string, unknown>[]
@@ -11,54 +12,121 @@ interface PreviewPanelProps {
 export function PreviewPanel({ data, fields }: PreviewPanelProps) {
   const [copied, setCopied] = useState(false)
   const [viewMode, setViewMode] = useState<'table' | 'json'>('table')
+  const [isExporting, setIsExporting] = useState(false)
+
+  // 按字段顺序整理数据用于显示
+  const getOrderedValue = (row: Record<string, unknown>, fieldName: string): string => {
+    const value = row[fieldName]
+    if (value === undefined || value === null) return ''
+    return String(value)
+  }
 
   const copyToClipboard = async (format: 'json' | 'csv' | 'sql') => {
+    if (data.length === 0) return
+
     let content = ''
 
     if (format === 'json') {
-      content = JSON.stringify(data, null, 2)
+      // 按字段顺序构建数据
+      const orderedData = data.map(row => {
+        const ordered: Record<string, unknown> = {}
+        fields.forEach(f => {
+          ordered[f.name] = row[f.name]
+        })
+        return ordered
+      })
+      content = JSON.stringify(orderedData, null, 2)
     } else if (format === 'csv') {
       const headers = fields.map((f) => f.name).join(',')
-      const rows = data.map((row) => fields.map((f) => `"${row[f.name]}"`).join(','))
+      const rows = data.map((row) =>
+        fields.map((f) => `"${getOrderedValue(row, f.name).replace(/"/g, '""')}"`).join(',')
+      )
       content = [headers, ...rows].join('\n')
     } else if (format === 'sql') {
       const tableName = 'test_data'
       const columns = fields.map((f) => f.name).join(', ')
       const values = data
         .map((row) => {
-          const vals = fields.map((f) => `'${row[f.name]}'`).join(', ')
+          const vals = fields.map((f) => {
+            const val = getOrderedValue(row, f.name).replace(/'/g, "''")
+            return `'${val}'`
+          }).join(', ')
           return `(${vals})`
         })
         .join(',\n')
       content = `INSERT INTO ${tableName} (${columns}) VALUES\n${values};`
     }
 
-    await navigator.clipboard.writeText(content)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('复制失败:', err)
+    }
   }
 
-  const downloadData = (format: 'json' | 'csv' | 'sql') => {
+  const handleExport = async (format: 'json' | 'csv' | 'sql') => {
+    if (data.length === 0 || isExporting) return
+
+    setIsExporting(true)
+    try {
+      let blob: Blob
+      let filename: string
+
+      if (format === 'json') {
+        blob = await exportToJson(data, fields)
+        filename = 'generated_data.json'
+      } else if (format === 'csv') {
+        blob = await exportToCsv(data, fields)
+        filename = 'generated_data.csv'
+      } else {
+        blob = await exportToSql(data, fields, 'test_data')
+        filename = 'generated_data.sql'
+      }
+
+      downloadBlob(blob, filename)
+    } catch (err) {
+      console.error('导出失败:', err)
+      // 降级到前端导出
+      fallbackExport(format)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const fallbackExport = (format: 'json' | 'csv' | 'sql') => {
     let content = ''
     let mimeType = ''
     let extension = ''
 
+    // 按字段顺序构建数据
+    const orderedData = data.map(row => {
+      const ordered: Record<string, unknown> = {}
+      fields.forEach(f => {
+        ordered[f.name] = row[f.name]
+      })
+      return ordered
+    })
+
     if (format === 'json') {
-      content = JSON.stringify(data, null, 2)
+      content = JSON.stringify(orderedData, null, 2)
       mimeType = 'application/json'
       extension = 'json'
     } else if (format === 'csv') {
       const headers = fields.map((f) => f.name).join(',')
-      const rows = data.map((row) => fields.map((f) => `"${row[f.name]}"`).join(','))
+      const rows = orderedData.map((row) =>
+        fields.map((f) => `"${String(row[f.name] ?? '').replace(/"/g, '""')}"`).join(',')
+      )
       content = [headers, ...rows].join('\n')
       mimeType = 'text/csv'
       extension = 'csv'
     } else if (format === 'sql') {
       const tableName = 'test_data'
       const columns = fields.map((f) => f.name).join(', ')
-      const values = data
+      const values = orderedData
         .map((row) => {
-          const vals = fields.map((f) => `'${row[f.name]}'`).join(', ')
+          const vals = fields.map((f) => `'${String(row[f.name] ?? '').replace(/'/g, "''")}'`).join(', ')
           return `(${vals})`
         })
         .join(',\n')
@@ -145,8 +213,8 @@ export function PreviewPanel({ data, fields }: PreviewPanelProps) {
                         <td className="px-4 py-3 text-muted-foreground">{index + 1}</td>
                         {fields.map((field) => (
                           <td key={field.id} className="px-4 py-3 text-foreground font-mono text-xs">
-                            {String(row[field.name]).slice(0, 30)}
-                            {String(row[field.name]).length > 30 && '...'}
+                            {getOrderedValue(row, field.name).slice(0, 30)}
+                            {getOrderedValue(row, field.name).length > 30 && '...'}
                           </td>
                         ))}
                       </tr>
@@ -161,7 +229,17 @@ export function PreviewPanel({ data, fields }: PreviewPanelProps) {
               </div>
             ) : (
               <pre className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-foreground overflow-auto font-mono">
-                {JSON.stringify(data.slice(0, 20), null, 2)}
+                {JSON.stringify(
+                  data.slice(0, 20).map(row => {
+                    const ordered: Record<string, unknown> = {}
+                    fields.forEach(f => {
+                      ordered[f.name] = row[f.name]
+                    })
+                    return ordered
+                  }),
+                  null,
+                  2
+                )}
                 {data.length > 20 && '\n\n// ... 更多数据'}
               </pre>
             )}
@@ -171,19 +249,35 @@ export function PreviewPanel({ data, fields }: PreviewPanelProps) {
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">选择导出格式</p>
               <div className="flex items-center gap-2">
-                <button onClick={() => copyToClipboard('json')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary">
-                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  复制
+                <button
+                  onClick={() => copyToClipboard('json')}
+                  disabled={data.length === 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? '已复制' : '复制'}
                 </button>
-                <button onClick={() => downloadData('json')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary">
+                <button
+                  onClick={() => handleExport('json')}
+                  disabled={data.length === 0 || isExporting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <FileJson className="h-3.5 w-3.5" />
                   JSON
                 </button>
-                <button onClick={() => downloadData('csv')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary">
+                <button
+                  onClick={() => handleExport('csv')}
+                  disabled={data.length === 0 || isExporting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <FileSpreadsheet className="h-3.5 w-3.5" />
                   CSV
                 </button>
-                <button onClick={() => downloadData('sql')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary">
+                <button
+                  onClick={() => handleExport('sql')}
+                  disabled={data.length === 0 || isExporting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <FileCode className="h-3.5 w-3.5" />
                   SQL
                 </button>

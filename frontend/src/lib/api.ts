@@ -24,6 +24,13 @@ export interface Template {
   updatedAt: string
 }
 
+export interface GenerateResponse {
+  success: boolean
+  data: Record<string, unknown>[]
+  count: number
+  fields: DataField[]
+}
+
 // 获取数据类型
 export async function fetchDataTypes(): Promise<DataType[]> {
   const res = await fetch(`${API_BASE}/types`)
@@ -63,4 +70,46 @@ export async function createTemplate(template: Omit<Template, 'id' | 'createdAt'
 // 删除模板
 export async function deleteTemplate(id: string): Promise<void> {
   await fetch(`${API_BASE}/templates/${id}`, { method: 'DELETE' })
+}
+
+// 导出为JSON（后端导出）
+export async function exportToJson(data: Record<string, unknown>[], fields: DataField[]): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/export/json`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data, fields }),
+  })
+  return res.blob()
+}
+
+// 导出为CSV（后端导出）
+export async function exportToCsv(data: Record<string, unknown>[], fields: DataField[]): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/export/csv`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data, fields }),
+  })
+  return res.blob()
+}
+
+// 导出为SQL（后端导出）
+export async function exportToSql(data: Record<string, unknown>[], fields: DataField[], tableName: string = 'test_data'): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/export/sql`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data, fields, tableName }),
+  })
+  return res.blob()
+}
+
+// 下载Blob文件
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
