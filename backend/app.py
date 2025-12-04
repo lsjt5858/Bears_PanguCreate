@@ -8,7 +8,7 @@ from datetime import datetime
 import uuid
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173", "http://localhost:3000"])
+CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"])
 
 # 内存存储模板
 templates = [
@@ -169,4 +169,4 @@ def delete_template(template_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)
