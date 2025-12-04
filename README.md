@@ -15,39 +15,62 @@
 
 | 类型 | 技术 |
 |------|------|
-| 框架 | Next.js 16 (App Router) |
-| UI | React 19 + Tailwind CSS 4 |
-| 组件 | Radix UI + shadcn/ui |
+| 前端 | React 18 + Vite + TypeScript |
+| 样式 | Tailwind CSS |
+| 后端 | Python 3 + Flask |
 | 图标 | Lucide React |
 
 ## 🚀 快速开始
 
 ```bash
-# 安装依赖
-pnpm install
+# 1. 后端 - 创建虚拟环境并安装依赖
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
-# 启动开发服务器
-pnpm dev
+# 2. 启动后端 (端口 5000)
+python app.py
+# 或使用脚本: ./run.sh
 
-# 访问 http://localhost:3000
+# 3. 新终端，安装前端依赖
+cd frontend
+npm install
+
+# 4. 启动前端 (端口 5173)
+npm run dev
+
+# 访问 http://localhost:5173
 ```
 
 ## 📁 项目结构
 
 ```
-├── app/                    # Next.js 路由入口
-├── components/
-│   ├── data-generator-platform.tsx   # 主容器
-│   ├── generator-panel.tsx           # 字段配置面板
-│   ├── preview-panel.tsx             # 数据预览与导出
-│   ├── template-manager.tsx          # 模板管理
-│   ├── sidebar.tsx                   # 分类侧边栏
-│   └── ui/                           # 基础 UI 组件
-├── lib/
-│   ├── data-generator.ts             # 数据生成核心逻辑
-│   └── utils.ts                      # 工具函数
-└── hooks/                            # React Hooks
+├── frontend/                # React 前端
+│   ├── src/
+│   │   ├── components/      # React 组件
+│   │   ├── lib/             # API 调用 & 工具函数
+│   │   └── App.tsx          # 主应用
+│   └── package.json
+│
+├── backend/                 # Flask 后端
+│   ├── app.py               # API 入口
+│   ├── data_generator.py    # 数据生成核心逻辑
+│   └── requirements.txt
+│
+└── README.md
 ```
+
+## 🔌 API 端点
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/types` | 获取支持的数据类型 |
+| POST | `/api/generate` | 生成测试数据 |
+| GET | `/api/templates` | 获取模板列表 |
+| POST | `/api/templates` | 创建模板 |
+| PUT | `/api/templates/:id` | 更新模板 |
+| DELETE | `/api/templates/:id` | 删除模板 |
 
 ## 📖 使用说明
 
@@ -55,15 +78,6 @@ pnpm dev
 2. **配置字段** - 添加字段，设置名称和数据类型
 3. **生成数据** - 设置数量，点击"生成数据"
 4. **导出使用** - 预览数据，选择格式导出
-
-## 🔧 常用命令
-
-```bash
-pnpm dev      # 开发模式
-pnpm build    # 生产构建
-pnpm start    # 启动生产服务
-pnpm lint     # 代码检查
-```
 
 ## 📝 License
 
