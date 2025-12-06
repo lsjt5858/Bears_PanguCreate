@@ -1,0 +1,8 @@
+{
+    "build": {
+        "outputDirectory": "dist"
+    },
+    "routes": {
+        "fallback": "/index.html"
+    }
+}
