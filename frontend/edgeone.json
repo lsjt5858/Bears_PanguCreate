@@ -1,9 +1,0 @@
-{
-    "build": {
-        "command": "npm run build",
-        "outputDirectory": "dist"
-    },
-    "routes": {
-        "fallback": "/index.html"
-    }
-}
