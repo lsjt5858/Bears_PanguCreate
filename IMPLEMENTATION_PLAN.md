@@ -1,4 +1,4 @@
-# DataForge 企业级功能扩展实施计划
+# Bears_PanguCreate 企业级功能扩展实施计划
 
 ## 📋 功能概览
 

@@ -7,7 +7,7 @@ export function Header() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
           <Database className="h-4 w-4 text-primary-foreground" />
         </div>
-        <h1 className="text-lg font-semibold text-foreground">DataForge</h1>
+        <h1 className="text-lg font-semibold text-foreground">Bears_PanguCreate</h1>
         <span className="ml-2 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">Enterprise</span>
       </div>
 

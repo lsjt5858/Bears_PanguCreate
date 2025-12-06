@@ -1,4 +1,4 @@
-# Bears_PanguCreate (DataForge)
+# Bears_PanguCreate
 
 🚀 **企业级测试数据生成平台** - 快速构造高质量模拟数据
 
