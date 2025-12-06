@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Header, MobileNav } from './components/layout'
 import { Sidebar } from './components/Sidebar'
 import { GeneratorPanel } from './components/GeneratorPanel'
@@ -20,9 +20,33 @@ import {
   type Template
 } from './lib/api'
 
+// 有效的页面列表
+const validPages = ['dashboard', 'generator', 'relation', 'templates', 'history', 'datasource', 'api']
+
+// 从 URL hash 获取当前页面
+function getPageFromHash(): string {
+  const hash = window.location.hash.replace('#', '')
+  return validPages.includes(hash) ? hash : 'generator'
+}
+
 function App() {
-  // 页面状态
-  const [activePage, setActivePage] = useState('generator')
+  // 页面状态 - 从 URL hash 初始化
+  const [activePage, setActivePage] = useState(getPageFromHash)
+
+  // 监听 hash 变化
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActivePage(getPageFromHash())
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  // 改变页面时同时更新 URL hash
+  const handlePageChange = useCallback((page: string) => {
+    setActivePage(page)
+    window.location.hash = page
+  }, [])
 
   // 数据生成相关状态
   const [fields, setFields] = useState<DataField[]>([
@@ -91,7 +115,7 @@ function App() {
           // 应用模板
           if (template.fields && template.fields.length > 0) {
             setFields(template.fields)
-            setActivePage('generator')
+            handlePageChange('generator')
           }
         }} />
 
@@ -100,7 +124,7 @@ function App() {
           // 复用历史配置
           setFields(record.fields)
           setRecordCount(record.count)
-          setActivePage('generator')
+          handlePageChange('generator')
         }} />
 
       case 'datasource':
@@ -119,11 +143,11 @@ function App() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <Header activePage={activePage} onPageChange={setActivePage} />
+      <Header activePage={activePage} onPageChange={handlePageChange} />
       <div className="flex flex-1 overflow-hidden pb-16 lg:pb-0">
         {renderPage()}
       </div>
-      <MobileNav activePage={activePage} onPageChange={setActivePage} />
+      <MobileNav activePage={activePage} onPageChange={handlePageChange} />
     </div>
   )
 }
