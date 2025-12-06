@@ -1,0 +1,6 @@
+export { DashboardPage } from './DashboardPage'
+export { HistoryPage } from './HistoryPage'
+export { TemplateMarketPage } from './TemplateMarketPage'
+export { DataSourcePage } from './DataSourcePage'
+export { ApiPage } from './ApiPage'
+export { RelationPage } from './RelationPage'
