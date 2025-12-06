@@ -1,0 +1,7 @@
+# EdgeOne Pages 配置
+# 将所有请求重写到 index.html 以支持 SPA 路由
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
