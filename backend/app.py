@@ -1,5 +1,5 @@
 """
-DataForge Backend - Flask API
+Bears_PanguCreate Backend - Flask API
 企业级测试数据生成平台
 """
 import sys

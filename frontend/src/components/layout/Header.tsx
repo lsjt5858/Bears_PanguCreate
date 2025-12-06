@@ -45,7 +45,7 @@ export function Header({ activePage, onPageChange }: HeaderProps) {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                         <Database className="h-4 w-4 text-primary-foreground" />
                     </div>
-                    <h1 className="text-lg font-semibold text-foreground hidden sm:block">DataForge</h1>
+                    <h1 className="text-lg font-semibold text-foreground hidden sm:block">盘古</h1>
                     <span className="hidden sm:inline-flex ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
                         Enterprise
                     </span>
