@@ -7,7 +7,6 @@ import {
     EyeOff,
     Trash2,
     Clock,
-    Shield,
     Calendar,
     Play,
     Pause,

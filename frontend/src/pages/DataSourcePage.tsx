@@ -11,7 +11,7 @@ import {
     Server,
     Globe
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Modal, ModalFooter, Select, Badge } from '@/components/common'
+import { Card, CardContent, Button, Input, Modal, ModalFooter, Select, Badge } from '@/components/common'
 import type { DataSource, DataSourceType } from '@/lib/types'
 
 // 模拟数据源
@@ -75,7 +75,7 @@ const statusConfig = {
 }
 
 export function DataSourcePage() {
-    const [dataSources, setDataSources] = useState<DataSource[]>(mockDataSources)
+    const [dataSources, _setDataSources] = useState<DataSource[]>(mockDataSources)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingSource, setEditingSource] = useState<DataSource | null>(null)
     const [formData, setFormData] = useState({

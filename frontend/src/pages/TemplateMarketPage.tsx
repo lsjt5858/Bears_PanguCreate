@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Star, Download, Grid, List, Filter, ChevronDown, Heart } from 'lucide-react'
+import { Search, Star, Download, Grid, List, Heart } from 'lucide-react'
 import { Card, CardContent, Button, Input, Badge, Tabs, TabsList, TabsTrigger } from '@/components/common'
 import { cn } from '@/lib/utils'
 import type { MarketTemplate } from '@/lib/types'

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>盘古造数 - 企业级测试数据生成平台</title>
+    <script>
+        // SPA 路由处理：将 404 重定向到首页
+        // EdgeOne Pages 会使用此文件处理所有未匹配的路由
+        const path = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+
+        // 将当前路径存储到 sessionStorage，以便首页可以恢复
+        sessionStorage.setItem('redirectPath', path + search + hash);
+
+        // 重定向到首页
+        window.location.replace('/');
+    </script>
+</head>
+
+<body>
+    <noscript>
+        <meta http-equiv="refresh" content="0;url=/" />
+    </noscript>
+</body>
+
+</html>
