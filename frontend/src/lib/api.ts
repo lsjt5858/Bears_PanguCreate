@@ -284,3 +284,76 @@ export async function getCurrentUser(token: string): Promise<User> {
 
   return result.user
 }
+
+// ==========================================
+// 统计 API
+// ==========================================
+
+import type { DashboardStats, TrendData, ActivityLog } from './types'
+
+export async function fetchDashboardStats(): Promise<DashboardStats> {
+  const res = await fetch(`${API_BASE}/stats/dashboard`, {
+    headers: getAuthHeaders()
+  })
+
+  if (!res.ok) {
+    throw new Error('获取仪表盘数据失败')
+  }
+
+  const result = await res.json()
+  const data = result.data
+
+  return {
+    totalGenerated: data.total_generated,
+    totalTemplates: data.total_templates,
+    totalMembers: data.total_members,
+    apiCalls: data.api_calls,
+    generatedThisMonth: data.generated_this_month,
+    generatedLastMonth: data.generated_last_month
+  }
+}
+
+export async function fetchTrendData(days: number = 30): Promise<TrendData[]> {
+  const res = await fetch(`${API_BASE}/stats/trend?days=${days}`, {
+    headers: getAuthHeaders()
+  })
+
+  if (!res.ok) {
+    throw new Error('获取趋势数据失败')
+  }
+
+  const result = await res.json()
+
+  return result.data.map((item: any) => ({
+    date: item.date,
+    count: item.rows // 使用 rows 作为生成量
+  }))
+}
+
+export async function fetchRecentActivities(limit: number = 10): Promise<ActivityLog[]> {
+  const res = await fetch(`${API_BASE}/stats/activities?limit=${limit}`, {
+    headers: getAuthHeaders()
+  })
+
+  if (!res.ok) {
+    throw new Error('获取最近活动失败')
+  }
+
+  const result = await res.json()
+
+  return result.data.map((item: any) => ({
+    id: item.id,
+    userId: item.user_id,
+    user: {
+      id: item.user.id,
+      name: item.user.name,
+      email: item.user.email,
+      avatar: item.user.avatar,
+      role: 'member', // 后端未返回角色，默认为 member
+      createdAt: ''   // 后端未返回创建时间，留空
+    },
+    action: item.action,
+    target: item.target,
+    createdAt: item.created_at
+  }))
+}
