@@ -8,3 +8,8 @@ pyjwt>=2.8.0
 apscheduler>=3.10.0
 croniter>=2.0.0
 requests>=2.31.0
+
+# 数据库驱动 (可选，按需安装)
+pymysql>=1.1.0
+psycopg2-binary>=2.9.0
+pymongo>=4.6.0

@@ -78,12 +78,12 @@
 
 | # | 任务 | 模块 | 预计工时 | 状态 |
 |---|------|------|----------|------|
-| 27 | 数据源模型 `models/datasource.py` | 后端 | 1h | ❌ |
-| 28 | 数据源服务 `services/datasource_service.py` | 后端 | 2h | ❌ |
-| 29 | MySQL 连接器 `connectors/mysql_connector.py` | 后端 | 2h | ❌ |
-| 30 | PostgreSQL 连接器 `connectors/postgres_connector.py` | 后端 | 2h | ❌ |
-| 31 | MongoDB 连接器 `connectors/mongo_connector.py` | 后端 | 2h | ❌ |
-| 32 | 数据源路由 `routes/datasource_routes.py` | 后端 | 1h | ❌ |
+| 27 | 数据源模型 `models/datasource.py` | 后端 | 1h | ✅ |
+| 28 | 数据源服务 `services/datasource_service.py` | 后端 | 2h | ✅ |
+| 29 | MySQL 连接器 `connectors/mysql_connector.py` | 后端 | 2h | ✅ |
+| 30 | PostgreSQL 连接器 `connectors/postgres_connector.py` | 后端 | 2h | ✅ |
+| 31 | MongoDB 连接器 `connectors/mongo_connector.py` | 后端 | 2h | ✅ |
+| 32 | 数据源路由 `routes/datasource_routes.py` | 后端 | 1h | ✅ |
 | 33 | 数据源页面对接真实 API | 前端 | 1h | ❌ |
 | 34 | 关系生成服务 `services/relation_generator_service.py` | 后端 | 4h | ❌ |
 | 35 | 关联数据路由 `routes/relation_routes.py` | 后端 | 1h | ❌ |
@@ -284,11 +284,11 @@ npm run dev
 | 指标 | 数量 |
 |------|------|
 | 总任务数 | 45 |
-| 已完成 | 26 |
+| 已完成 | 32 |
 | P0 任务 | 9/9 ✅ |
 | P1 任务 | 9/9 ✅ |
 | P2 任务 | 8/8 ✅ |
-| P3 任务 | 0/10 |
+| P3 任务 | 6/10 |
 | P4 任务 | 0/9 |
 | 预计总工时 | ~80h |
 

@@ -11,6 +11,7 @@ from .stats_routes import stats_bp
 from .template_market_routes import template_market_bp
 from .api_key_routes import api_key_bp
 from .scheduler_routes import scheduler_bp
+from .datasource_routes import datasource_bp
 
 __all__ = [
     "types_bp",
@@ -23,4 +24,5 @@ __all__ = [
     "template_market_bp",
     "api_key_bp",
     "scheduler_bp",
+    "datasource_bp",
 ]

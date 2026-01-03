@@ -12,6 +12,7 @@ from .user import User
 from .project import Project, project_members
 from .history import GenerationHistory
 from .template import Template as TemplateModel, Tag, TemplateRating, TemplateFavorite, TemplateDownload
+from .datasource import DataSource
 
 
 @dataclass
