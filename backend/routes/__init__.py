@@ -13,6 +13,8 @@ from .api_key_routes import api_key_bp
 from .scheduler_routes import scheduler_bp
 from .datasource_routes import datasource_bp
 
+from .relation_routes import relation_bp
+
 __all__ = [
     "types_bp",
     "generate_bp", 
@@ -25,4 +27,5 @@ __all__ = [
     "api_key_bp",
     "scheduler_bp",
     "datasource_bp",
+    "relation_bp",
 ]

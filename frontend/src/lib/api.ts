@@ -359,6 +359,80 @@ export async function fetchRecentActivities(limit: number = 10): Promise<Activit
 }
 
 // ==========================================
+// 数据源管理
+// ==========================================
+
+import type { DataSource, DataSourceType } from './types'
+
+export async function fetchDataSources(): Promise<DataSource[]> {
+  const res = await fetch(`${API_BASE}/datasources`, {
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('获取数据源列表失败')
+  const result = await res.json()
+  return result.data
+}
+
+export async function createDataSource(data: Partial<DataSource> & { password?: string, type: DataSourceType }): Promise<DataSource> {
+  const res = await fetch(`${API_BASE}/datasources`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.error || '创建数据源失败')
+  }
+
+  const result = await res.json()
+  return result.data
+}
+
+export async function updateDataSource(id: string, data: Partial<DataSource> & { password?: string }): Promise<DataSource> {
+  const res = await fetch(`${API_BASE}/datasources/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.error || '更新数据源失败')
+  }
+
+  const result = await res.json()
+  return result.data
+}
+
+export async function deleteDataSource(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/datasources/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('删除数据源失败')
+}
+
+export async function testDataSourceConnection(id: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/datasources/${id}/test`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  })
+  const result = await res.json()
+  return result
+}
+
+export async function testConnectionParams(params: any): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/datasources/test`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(params)
+  })
+  const result = await res.json()
+  return result
+}
+
+// ==========================================
 // API 密钥管理
 // ==========================================
 
@@ -542,6 +616,7 @@ export async function fetchCronPresets(): Promise<CronPreset[]> {
   return result.data
 }
 
+
 export async function fetchTaskLogs(taskId: string, page = 1, pageSize = 20): Promise<{ data: TaskExecutionLog[], total: number }> {
   const res = await fetch(`${API_BASE}/scheduled-tasks/${taskId}/logs?page=${page}&page_size=${pageSize}`, {
     headers: getAuthHeaders()
@@ -552,4 +627,26 @@ export async function fetchTaskLogs(taskId: string, page = 1, pageSize = 20): Pr
     data: result.data,
     total: result.pagination.total
   }
+}
+
+// ==========================================
+// 关联数据生成
+// ==========================================
+
+import type { RelationTable, TableRelation } from './types'
+
+export async function generateRelationData(tables: RelationTable[], relations: TableRelation[]): Promise<Record<string, any[]>> {
+  const res = await fetch(`${API_BASE}/relation/generate`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ tables, relations })
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.error || '关联数据生成失败')
+  }
+
+  const result = await res.json()
+  return result.data
 }

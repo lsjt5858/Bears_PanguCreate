@@ -84,10 +84,10 @@
 | 30 | PostgreSQL 连接器 `connectors/postgres_connector.py` | 后端 | 2h | ✅ |
 | 31 | MongoDB 连接器 `connectors/mongo_connector.py` | 后端 | 2h | ✅ |
 | 32 | 数据源路由 `routes/datasource_routes.py` | 后端 | 1h | ✅ |
-| 33 | 数据源页面对接真实 API | 前端 | 1h | ❌ |
-| 34 | 关系生成服务 `services/relation_generator_service.py` | 后端 | 4h | ❌ |
-| 35 | 关联数据路由 `routes/relation_routes.py` | 后端 | 1h | ❌ |
-| 36 | 关联数据页面对接真实 API | 前端 | 1h | ❌ |
+| 33 | 数据源页面对接真实 API | 前端 | 1h | ✅ |
+| 34 | 关系生成服务 `services/relation_generator_service.py` | 后端 | 4h | ✅ |
+| 35 | 关联数据路由 `routes/relation_routes.py` | 后端 | 1h | ✅ |
+| 36 | 关联数据页面对接真实 API | 前端 | 1h | ✅ |
 
 **P3 小计: ~17h**
 
@@ -147,9 +147,9 @@
 | 仪表盘 | `DashboardPage.tsx` | ✅ | ✅ | 真实数据 |
 | 历史记录 | `HistoryPage.tsx` | ✅ | ✅ | 真实数据 |
 | 模板市场 | `TemplateMarketPage.tsx` | ✅ | ✅ | 真实数据 |
-| 数据源 | `DataSourcePage.tsx` | ✅ | ❌ | 模拟数据 |
+| 数据源 | `DataSourcePage.tsx` | ✅ | ✅ | 真实数据 |
 | API 管理 | `ApiPage.tsx` | ✅ | ✅ | 真实数据 |
-| 关联数据 | `RelationPage.tsx` | ✅ | ❌ | 模拟数据 |
+| 关联数据 | `RelationPage.tsx` | ✅ | ✅ | 真实数据 |
 | 定时任务 | `ApiPage.tsx` | ✅ | ✅ | 真实数据 |
 
 ### 5. 前端交互功能 ✅
@@ -267,15 +267,15 @@ npm run dev
 | GET | `/api/template-market` | 模板市场列表 |
 | POST | `/api/template-market/:id/rate` | 评分模板 |
 | POST | `/api/template-market/:id/favorite` | 收藏模板 |
+| GET | `/api/datasources` | 数据源列表 |
+| POST | `/api/datasources` | 创建数据源 |
+| POST | `/api/datasources/test` | 测试数据源连接 |
+| POST | `/api/relation/generate` | 生成关联数据 |
 
 ### 待实现 ❌
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/datasources` | 数据源列表 |
-| POST | `/api/datasources` | 创建数据源 |
-| POST | `/api/datasources/test` | 测试数据源连接 |
-| POST | `/api/relation/generate` | 生成关联数据 |
 
 ---
 
@@ -288,7 +288,7 @@ npm run dev
 | P0 任务 | 9/9 ✅ |
 | P1 任务 | 9/9 ✅ |
 | P2 任务 | 8/8 ✅ |
-| P3 任务 | 6/10 |
+| P3 任务 | 10/10 ✅ |
 | P4 任务 | 0/9 |
 | 预计总工时 | ~80h |
 

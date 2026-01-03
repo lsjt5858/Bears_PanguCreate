@@ -80,6 +80,8 @@ export interface DataSource {
     port: number
     database?: string
     username?: string
+    description?: string
+    useSsl?: boolean
     status: 'connected' | 'disconnected' | 'error'
     lastConnected?: string
     createdAt: string

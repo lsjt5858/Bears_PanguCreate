@@ -8,8 +8,9 @@ import {
     Key,
     Link2
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, Button, Input, Select, Badge } from '@/components/common'
+import { Card, CardContent, CardHeader, Button, Input, Select, Badge, Modal, ModalFooter, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common'
 import type { RelationTable, TableRelation, RelationType, DataField } from '@/lib/types'
+import { generateRelationData } from '@/lib/api'
 
 // 模拟数据类型
 const dataTypeOptions = [
@@ -69,6 +70,9 @@ export function RelationPage() {
     const [tables, setTables] = useState<RelationTable[]>(initialTables)
     const [relations, setRelations] = useState<TableRelation[]>(initialRelations)
     const [isGenerating, setIsGenerating] = useState(false)
+    const [generatedData, setGeneratedData] = useState<Record<string, any[]> | null>(null)
+    const [isResultModalOpen, setIsResultModalOpen] = useState(false)
+    const [activeResultTab, setActiveResultTab] = useState<string>('')
 
     const addTable = () => {
         const newTable: RelationTable = {
@@ -166,11 +170,34 @@ export function RelationPage() {
     }
 
     const handleGenerate = async () => {
+        if (tables.length === 0) return
+
         setIsGenerating(true)
-        // 模拟生成
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        setIsGenerating(false)
-        alert('关联数据生成完成！')
+        try {
+            const data = await generateRelationData(tables, relations)
+            setGeneratedData(data)
+            if (Object.keys(data).length > 0) {
+                setActiveResultTab(Object.keys(data)[0])
+            }
+            setIsResultModalOpen(true)
+        } catch (error: any) {
+            alert(error.message || '生成关联数据失败')
+        } finally {
+            setIsGenerating(false)
+        }
+    }
+
+    const downloadJson = (tableName: string) => {
+        if (!generatedData || !generatedData[tableName]) return
+        const blob = new Blob([JSON.stringify(generatedData[tableName], null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${tableName}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
     }
 
     return (
@@ -409,6 +436,51 @@ export function RelationPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* 结果展示弹窗 */}
+            <Modal
+                isOpen={isResultModalOpen}
+                onClose={() => setIsResultModalOpen(false)}
+                title="关联数据生成结果"
+                size="xl"
+            >
+                {generatedData && (
+                    <div className="h-[60vh] flex flex-col">
+                        <Tabs value={activeResultTab} onChange={setActiveResultTab} className="h-full flex flex-col">
+                            <div className="flex items-center justify-between border-b pb-2 mb-2">
+                                <TabsList>
+                                    {Object.keys(generatedData).map(tableName => (
+                                        <TabsTrigger key={tableName} value={tableName}>
+                                            {tableName} ({generatedData[tableName].length})
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                                <Button size="sm" variant="outline" onClick={() => downloadJson(activeResultTab)}>
+                                    下载 JSON
+                                </Button>
+                            </div>
+
+                            {Object.keys(generatedData).map(tableName => (
+                                <TabsContent key={tableName} value={tableName} className="flex-1 overflow-auto mt-0">
+                                    <div className="bg-muted p-4 rounded-md overflow-auto font-mono text-xs h-full">
+                                        <pre>{JSON.stringify(generatedData[tableName].slice(0, 50), null, 2)}</pre>
+                                        {generatedData[tableName].length > 50 && (
+                                            <div className="text-muted-foreground mt-2 italic text-center">
+                                                ... 仅展示前 50 条，请下载查看完整数据 ...
+                                            </div>
+                                        )}
+                                    </div>
+                                </TabsContent>
+                            ))}
+                        </Tabs>
+                    </div>
+                )}
+                <ModalFooter>
+                    <Button variant="primary" onClick={() => setIsResultModalOpen(false)}>
+                        关闭
+                    </Button>
+                </ModalFooter>
+            </Modal>
         </div>
     )
 }

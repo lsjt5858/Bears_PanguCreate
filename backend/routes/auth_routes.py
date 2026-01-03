@@ -15,7 +15,40 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    """用户注册"""
+    """
+    用户注册
+    ---
+    tags:
+      - 认证
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - username
+            - email
+            - password
+          properties:
+            username:
+              type: string
+              description: 用户名
+              example: testuser
+            email:
+              type: string
+              description: 邮箱
+              example: test@example.com
+            password:
+              type: string
+              description: 密码（至少6位）
+              example: "123456"
+    responses:
+      201:
+        description: 注册成功
+      400:
+        description: 参数错误或用户已存在
+    """
     data = request.get_json()
     if not data:
         return jsonify({'error': '请求数据不能为空'}), 400
@@ -40,7 +73,38 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """用户登录"""
+    """
+    用户登录
+    ---
+    tags:
+      - 认证
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - password
+          properties:
+            username:
+              type: string
+              description: 用户名或邮箱
+              example: testuser
+            email:
+              type: string
+              description: 邮箱（与username二选一）
+              example: test@example.com
+            password:
+              type: string
+              description: 密码
+              example: "123456"
+    responses:
+      200:
+        description: 登录成功，返回 access_token 和 refresh_token
+      401:
+        description: 用户名或密码错误
+    """
     data = request.get_json()
     if not data:
         return jsonify({'error': '请求数据不能为空'}), 400
@@ -61,7 +125,29 @@ def login():
 
 @auth_bp.route('/refresh', methods=['POST'])
 def refresh_token():
-    """刷新访问令牌"""
+    """
+    刷新访问令牌
+    ---
+    tags:
+      - 认证
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - refresh_token
+          properties:
+            refresh_token:
+              type: string
+              description: 刷新令牌
+    responses:
+      200:
+        description: 刷新成功
+      401:
+        description: 刷新令牌无效或已过期
+    """
     data = request.get_json()
     if not data:
         return jsonify({'error': '请求数据不能为空'}), 400
@@ -85,7 +171,19 @@ def refresh_token():
 @auth_bp.route('/me', methods=['GET'])
 @login_required
 def get_current_user():
-    """获取当前用户信息"""
+    """
+    获取当前用户信息
+    ---
+    tags:
+      - 认证
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: 返回用户信息
+      401:
+        description: 未登录或令牌无效
+    """
     user = g.current_user
     
     # 获取用户的项目列表
@@ -102,7 +200,35 @@ def get_current_user():
 @auth_bp.route('/password', methods=['PUT'])
 @login_required
 def change_password():
-    """修改密码"""
+    """
+    修改密码
+    ---
+    tags:
+      - 认证
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - old_password
+            - new_password
+          properties:
+            old_password:
+              type: string
+              description: 旧密码
+            new_password:
+              type: string
+              description: 新密码（至少6位）
+    responses:
+      200:
+        description: 密码修改成功
+      400:
+        description: 旧密码错误或新密码不符合要求
+    """
     data = request.get_json()
     if not data:
         return jsonify({'error': '请求数据不能为空'}), 400
@@ -129,7 +255,29 @@ def change_password():
 @auth_bp.route('/profile', methods=['PUT'])
 @login_required
 def update_profile():
-    """更新个人资料"""
+    """
+    更新个人资料
+    ---
+    tags:
+      - 认证
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        schema:
+          type: object
+          properties:
+            nickname:
+              type: string
+              description: 昵称
+            avatar:
+              type: string
+              description: 头像URL
+    responses:
+      200:
+        description: 资料更新成功
+    """
     data = request.get_json()
     if not data:
         return jsonify({'error': '请求数据不能为空'}), 400
