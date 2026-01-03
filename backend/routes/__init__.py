@@ -8,6 +8,7 @@ from .export_routes import export_bp
 from .auth_routes import auth_bp
 from .history_routes import history_bp
 from .stats_routes import stats_bp
+from .template_market_routes import template_market_bp
 
 __all__ = [
     "types_bp",
@@ -17,4 +18,5 @@ __all__ = [
     "auth_bp",
     "history_bp",
     "stats_bp",
+    "template_market_bp",
 ]

@@ -11,6 +11,7 @@ from .base import BaseModel
 from .user import User
 from .project import Project, project_members
 from .history import GenerationHistory
+from .template import Template as TemplateModel, Tag, TemplateRating, TemplateFavorite, TemplateDownload
 
 
 @dataclass
@@ -39,7 +40,7 @@ class DataField:
 
 @dataclass
 class Template:
-    """模板模型"""
+    """模板模型（旧版，保持兼容）"""
     id: str
     name: str
     description: str
