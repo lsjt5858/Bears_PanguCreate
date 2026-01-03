@@ -14,7 +14,7 @@ from datetime import datetime
 
 from config import get_config
 from extensions import init_extensions, db
-from routes import types_bp, generate_bp, templates_bp, export_bp
+from routes import types_bp, generate_bp, templates_bp, export_bp, auth_bp
 
 
 def create_app(config_class=None):
@@ -37,6 +37,7 @@ def create_app(config_class=None):
     app.register_blueprint(generate_bp)
     app.register_blueprint(templates_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(auth_bp)
     
     # 健康检查端点
     @app.route("/api/health", methods=["GET"])
