@@ -425,3 +425,131 @@ export async function revokeApiKey(id: string): Promise<void> {
   })
   if (!res.ok) throw new Error('撤销密钥失败')
 }
+
+// ==========================================
+// 定时任务管理
+// ==========================================
+
+import type { ScheduledTask, CronPreset, TaskExecutionLog } from './types'
+
+function mapScheduledTask(data: any): ScheduledTask {
+  return {
+    id: data.id,
+    name: data.name,
+    description: data.description,
+    templateId: data.template_id,
+    cronExpression: data.cron_expression,
+    timezone: data.timezone,
+    fields: data.fields,
+    rowCount: data.row_count,
+    exportFormat: data.export_format,
+    tableName: data.table_name,
+    outputType: data.output_type,
+    outputConfig: data.output_config,
+    status: data.status,
+    isEnabled: data.is_enabled,
+    isActive: data.is_active,
+    runCount: data.run_count,
+    successCount: data.success_count,
+    failCount: data.fail_count,
+    lastRunAt: data.last_run_at,
+    lastRunStatus: data.last_run_status,
+    lastError: data.last_error,
+    nextRunAt: data.next_run_at,
+    maxRuns: data.max_runs,
+    expiresAt: data.expires_at,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+  }
+}
+
+export async function fetchScheduledTasks(): Promise<ScheduledTask[]> {
+  const res = await fetch(`${API_BASE}/scheduled-tasks`, {
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('获取任务列表失败')
+  const result = await res.json()
+  return result.data.map(mapScheduledTask)
+}
+
+export async function createScheduledTask(data: Partial<ScheduledTask>): Promise<ScheduledTask> {
+  // 转换为后端字段
+  const backendData = {
+    name: data.name,
+    description: data.description,
+    template_id: data.templateId,
+    cron_expression: data.cronExpression,
+    fields: data.fields,
+    row_count: data.rowCount,
+    export_format: data.exportFormat,
+    output_type: data.outputType || 'none',
+    timezone: data.timezone
+  }
+
+  const res = await fetch(`${API_BASE}/scheduled-tasks`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(backendData)
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.error || '创建任务失败')
+  }
+
+  const result = await res.json()
+  return mapScheduledTask(result.data)
+}
+
+export async function deleteScheduledTask(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/scheduled-tasks/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('删除任务失败')
+}
+
+export async function pauseScheduledTask(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/scheduled-tasks/${id}/pause`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('暂停任务失败')
+}
+
+export async function resumeScheduledTask(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/scheduled-tasks/${id}/resume`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('恢复任务失败')
+}
+
+export async function runScheduledTask(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/scheduled-tasks/${id}/run`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('触发任务失败')
+}
+
+export async function fetchCronPresets(): Promise<CronPreset[]> {
+  const res = await fetch(`${API_BASE}/scheduled-tasks/cron/presets`, {
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) return [] // 不报错，返回空
+  const result = await res.json()
+  return result.data
+}
+
+export async function fetchTaskLogs(taskId: string, page = 1, pageSize = 20): Promise<{ data: TaskExecutionLog[], total: number }> {
+  const res = await fetch(`${API_BASE}/scheduled-tasks/${taskId}/logs?page=${page}&page_size=${pageSize}`, {
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('获取执行日志失败')
+  const result = await res.json()
+  return {
+    data: result.data,
+    total: result.pagination.total
+  }
+}

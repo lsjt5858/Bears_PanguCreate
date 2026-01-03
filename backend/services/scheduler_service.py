@@ -24,10 +24,18 @@ class SchedulerService:
     
     def init_scheduler(self, app):
         """初始化调度器"""
+        # 防止 Flask 在 Debug 模式下启动两个调度器实例
+        if app.debug and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+            return
+
+        if self._scheduler and self._scheduler.running:
+            return
+
         from apscheduler.schedulers.background import BackgroundScheduler
         from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
         from apscheduler.executors.pool import ThreadPoolExecutor
         
+        print("Initializing Scheduler...")
         jobstores = {
             'default': SQLAlchemyJobStore(url=app.config['SQLALCHEMY_DATABASE_URI'])
         }
@@ -49,6 +57,7 @@ class SchedulerService:
         
         # 启动调度器
         self._scheduler.start()
+        print("Scheduler started successfully.")
         
         # 加载已有任务
         with app.app_context():
@@ -57,6 +66,7 @@ class SchedulerService:
     def _load_existing_tasks(self, app):
         """加载已有的活跃任务"""
         tasks = ScheduledTask.find_active_tasks()
+        print(f"Found {len(tasks)} active tasks to schedule.")
         for task in tasks:
             self._add_job(task, app)
     
@@ -100,6 +110,7 @@ class SchedulerService:
     
     def _execute_task(self, task_uuid: str, app=None):
         """执行任务"""
+        print(f"Executing task {task_uuid}...")
         if app:
             with app.app_context():
                 self._do_execute_task(task_uuid)
@@ -111,7 +122,11 @@ class SchedulerService:
         from services.data_generator_service import data_generator_service
         
         task = ScheduledTask.find_by_uuid(task_uuid)
-        if not task or not task.is_active:
+        if not task:
+            print(f"Task {task_uuid} not found.")
+            return
+        if not task.is_active:
+            print(f"Task {task_uuid} is not active (status: {task.status}).")
             return
         
         # 创建执行日志

@@ -140,19 +140,63 @@ export interface ApiKey {
 
 export type TaskStatus = 'active' | 'paused' | 'error'
 
+
 export interface ScheduledTask {
     id: string
     name: string
-    templateId: string
-    template?: Template
+    description?: string
+    templateId?: string
     cronExpression: string
-    targetDataSourceId?: string
-    targetDataSource?: DataSource
-    count: number
+    timezone: string
+
+    // 生成配置
+    fields?: DataField[]
+    rowCount: number
+    exportFormat: ExportFormat
+    tableName?: string
+
+    // 输出配置
+    outputType: 'none' | 'webhook' | 'email' | 'storage'
+    outputConfig?: Record<string, unknown>
+
+    // 状态
     status: TaskStatus
-    lastRun?: string
-    nextRun?: string
+    isEnabled: boolean
+    isActive: boolean
+
+    // 统计
+    runCount: number
+    successCount: number
+    failCount: number
+    lastRunAt?: string
+    lastRunStatus?: string
+    lastError?: string
+    nextRunAt?: string
+
+    maxRuns?: number
+    expiresAt?: string
+
     createdAt: string
+    updatedAt: string
+}
+
+export interface TaskExecutionLog {
+    id: number
+    taskId: number
+    startedAt: string
+    finishedAt?: string
+    durationMs?: number
+    status: 'success' | 'failed'
+    rowsGenerated?: number
+    errorMessage?: string
+    outputStatus?: string
+    createdAt: string
+}
+
+export interface CronPreset {
+    expression: string
+    name: string
+    description: string
 }
 
 // ==================== 关联数据 ====================

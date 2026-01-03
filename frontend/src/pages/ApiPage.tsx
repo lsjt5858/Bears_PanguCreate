@@ -9,29 +9,16 @@ import {
     Calendar,
     Play,
     Pause,
-    Settings,
     FileCode,
     Loader2,
     CheckCircle2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Modal, ModalFooter, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/common'
 import type { ApiKey, ScheduledTask, ApiKeyPermission, TaskStatus } from '@/lib/types'
-import { fetchApiKeys, createApiKey, deleteApiKey } from '@/lib/api'
+import { fetchApiKeys, createApiKey, deleteApiKey, fetchScheduledTasks, createScheduledTask, deleteScheduledTask, pauseScheduledTask, resumeScheduledTask, runScheduledTask, fetchCronPresets, fetchTemplates } from '@/lib/api'
+import type { Template, CronPreset } from '@/lib/types'
 
-// 模拟定时任务数据 (后端尚未就绪)
-const mockScheduledTasks: ScheduledTask[] = [
-    {
-        id: '1',
-        name: '每日用户数据同步',
-        templateId: '1',
-        cronExpression: '0 0 * * *',
-        count: 1000,
-        status: 'active',
-        lastRun: '2024-07-15T00:00:00.000Z',
-        nextRun: '2024-07-16T00:00:00.000Z',
-        createdAt: '2024-01-01T00:00:00.000Z',
-    },
-]
+// 移除模拟数据
 
 const permissionLabels: Record<ApiKeyPermission, { label: string; color: string }> = {
     read: { label: '只读', color: 'bg-blue-500/20 text-blue-400' },
@@ -46,9 +33,28 @@ const taskStatusConfig: Record<TaskStatus, { label: string; color: string; icon:
 }
 
 export function ApiPage() {
-    const [activeTab, setActiveTab] = useState('keys')
+    // 手动解析 URL 参数以保持标签页状态，避免引入 react-router-dom 的 Context 依赖
+    const getInitialTab = () => {
+        const params = new URLSearchParams(window.location.search)
+        return params.get('tab') || 'keys'
+    }
+
+    const [activeTab, setActiveTabState] = useState(getInitialTab)
+
+    const setActiveTab = (tab: string) => {
+        setActiveTabState(tab)
+        // 同步到 URL
+        const url = new URL(window.location.href)
+        url.searchParams.set('tab', tab)
+        window.history.replaceState({}, '', url.toString())
+    }
+
     const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+    const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([])
+    const [templates, setTemplates] = useState<Template[]>([])
+    const [cronPresets, setCronPresets] = useState<CronPreset[]>([])
     const [loading, setLoading] = useState(false)
+    const [tasksLoading, setTasksLoading] = useState(false)
 
     // 创建密钥状态
     const [isCreateKeyModalOpen, setIsCreateKeyModalOpen] = useState(false)
@@ -56,6 +62,14 @@ export function ApiPage() {
     const [newKeyPermissions, setNewKeyPermissions] = useState<ApiKeyPermission[]>(['read'])
     const [newKeyExpiresAt, setNewKeyExpiresAt] = useState('')
     const [isCreating, setIsCreating] = useState(false)
+
+    // 创建任务状态
+    const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
+    const [taskName, setTaskName] = useState('')
+    const [taskCron, setTaskCron] = useState('* * * * *')
+    const [taskTemplateId, setTaskTemplateId] = useState('')
+    const [taskRowCount, setTaskRowCount] = useState(100)
+    const [isCreatingTask, setIsCreatingTask] = useState(false)
 
     // 成功弹窗状态
     const [createdKey, setCreatedKey] = useState<{ name: string, key: string } | null>(null)
@@ -73,8 +87,37 @@ export function ApiPage() {
         }
     }
 
+    // 加载任务列表
+    const loadTasks = async () => {
+        try {
+            setTasksLoading(true)
+            const tasks = await fetchScheduledTasks()
+            setScheduledTasks(tasks)
+        } catch (err) {
+            console.error('Failed to fetch tasks:', err)
+        } finally {
+            setTasksLoading(false)
+        }
+    }
+
+    // 加载基础数据
+    const loadBaseData = async () => {
+        try {
+            const [tpls, presets] = await Promise.all([
+                fetchTemplates(),
+                fetchCronPresets()
+            ])
+            setTemplates(tpls)
+            setCronPresets(presets)
+        } catch (err) {
+            console.error('Failed to fetch base data:', err)
+        }
+    }
+
     useEffect(() => {
         loadKeys()
+        loadTasks()
+        loadBaseData()
     }, [])
 
     const copyToClipboard = (text: string) => {
@@ -132,6 +175,75 @@ export function ApiPage() {
                 return [...prev, perm]
             }
         })
+    }
+
+    // 任务操作
+    const handleCreateTask = async () => {
+        if (!taskName || !taskTemplateId || !taskCron || isCreatingTask) return
+
+        try {
+            setIsCreatingTask(true)
+            const template = templates.find(t => t.id === taskTemplateId)
+            if (!template) throw new Error('无效的模板')
+
+            const task = await createScheduledTask({
+                name: taskName,
+                templateId: taskTemplateId,
+                cronExpression: taskCron,
+                rowCount: taskRowCount,
+                fields: template.fields,
+                timezone: 'Asia/Shanghai'
+            })
+
+            setScheduledTasks(prev => [task, ...prev])
+            setIsCreateTaskModalOpen(false)
+            setTaskName('')
+            setTaskTemplateId('')
+            setTaskCron('* * * * *')
+            setTaskRowCount(100)
+        } catch (err: any) {
+            alert(err.message || '创建任务失败')
+        } finally {
+            setIsCreatingTask(false)
+        }
+    }
+
+    const handleDeleteTask = async (id: string, name: string) => {
+        if (!confirm(`确定要删除任务 "${name}" 吗？`)) return
+        try {
+            await deleteScheduledTask(id)
+            setScheduledTasks(prev => prev.filter(t => t.id !== id))
+        } catch (err: any) {
+            alert(err.message || '删除任务失败')
+        }
+    }
+
+    const handlePauseTask = async (id: string) => {
+        try {
+            await pauseScheduledTask(id)
+            setScheduledTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'paused' as TaskStatus } : t))
+        } catch (err: any) {
+            alert(err.message || '暂停失败')
+        }
+    }
+
+    const handleResumeTask = async (id: string) => {
+        try {
+            await resumeScheduledTask(id)
+            setScheduledTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'active' as TaskStatus } : t))
+        } catch (err: any) {
+            alert(err.message || '恢复失败')
+        }
+    }
+
+    const handleRunTask = async (id: string) => {
+        try {
+            await runScheduledTask(id)
+            alert('任务已手动触发')
+            loadTasks() // 刷新状态
+        } catch (err: any) {
+            alert(err.message || '执行失败')
+        }
     }
 
     return (
@@ -244,55 +356,93 @@ export function ApiPage() {
                     )}
                 </TabsContent>
 
-                {/* 定时任务 (Mock) */}
+                {/* 定时任务 */}
                 <TabsContent value="tasks">
                     <div className="flex justify-end mb-4">
-                        <Button variant="primary" disabled title="功能开发中">
+                        <Button variant="primary" onClick={() => setIsCreateTaskModalOpen(true)}>
                             <Plus className="h-4 w-4" />
                             创建任务
                         </Button>
                     </div>
 
-                    <div className="space-y-4">
-                        {mockScheduledTasks.map((task) => {
-                            const status = taskStatusConfig[task.status]
-                            const StatusIcon = status.icon
+                    {tasksLoading && scheduledTasks.length === 0 ? (
+                        <div className="flex justify-center p-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : scheduledTasks.length === 0 ? (
+                        <Card>
+                            <CardContent className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+                                <Clock className="h-12 w-12 mb-4 opacity-20" />
+                                <p>暂无定时任务</p>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="space-y-4">
+                            {scheduledTasks.map((task) => {
+                                const status = taskStatusConfig[task.status] || taskStatusConfig.error
+                                const StatusIcon = status.icon
 
-                            return (
-                                <Card key={task.id}>
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <h3 className="text-base font-semibold text-foreground">{task.name}</h3>
-                                                    <span className={`flex items-center gap-1 text-xs ${status.color}`}>
-                                                        <StatusIcon className="h-3.5 w-3.5" />
-                                                        {status.label}
-                                                    </span>
+                                return (
+                                    <Card key={task.id}>
+                                        <CardContent className="p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <h3 className="text-base font-semibold text-foreground">{task.name}</h3>
+                                                        <span className={`flex items-center gap-1 text-xs ${status.color}`}>
+                                                            <StatusIcon className="h-3.5 w-3.5" />
+                                                            {status.label}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                                                            ID: {task.id.slice(0, 8)}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                                        <span className="font-mono bg-muted/50 px-2 py-0.5 rounded flex items-center gap-1">
+                                                            <Clock className="h-3.5 w-3.5" />
+                                                            {task.cronExpression}
+                                                        </span>
+                                                        <span>生成 {task.rowCount.toLocaleString()} 条数据</span>
+                                                        {task.lastRunAt && (
+                                                            <span>最后运行: {new Date(task.lastRunAt).toLocaleString()}</span>
+                                                        )}
+                                                        {task.nextRunAt && (
+                                                            <span className="text-primary/70">下次运行: {new Date(task.nextRunAt).toLocaleString()}</span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="mt-3 flex gap-4 text-xs text-muted-foreground border-t border-border/50 pt-2">
+                                                        <span>累计运行: {task.runCount} 次</span>
+                                                        <span className="text-green-500/80">成功: {task.successCount}</span>
+                                                        <span className="text-red-500/80">失败: {task.failCount}</span>
+                                                    </div>
                                                 </div>
 
-                                                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                                                    <span className="font-mono bg-muted/50 px-2 py-0.5 rounded">
-                                                        {task.cronExpression}
-                                                    </span>
-                                                    <span>生成 {task.count.toLocaleString()} 条</span>
+                                                <div className="flex items-center gap-1">
+                                                    {task.status === 'active' ? (
+                                                        <Button variant="ghost" size="icon" onClick={() => handlePauseTask(task.id)} title="暂停">
+                                                            <Pause className="h-4 w-4" />
+                                                        </Button>
+                                                    ) : (
+                                                        <Button variant="ghost" size="icon" onClick={() => handleResumeTask(task.id)} title="恢复">
+                                                            <Play className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                    <Button variant="ghost" size="icon" onClick={() => handleRunTask(task.id)} title="立即触发一次">
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTask(task.id, task.name)} title="删除">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             </div>
-
-                                            <div className="flex items-center gap-1">
-                                                <Button variant="ghost" size="icon" disabled>
-                                                    <Play className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" disabled>
-                                                    <Settings className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )
-                        })}
-                    </div>
+                                        </CardContent>
+                                    </Card>
+                                )
+                            })}
+                        </div>
+                    )}
                 </TabsContent>
 
                 {/* API 文档 */}
@@ -352,8 +502,8 @@ export function ApiPage() {
                                     key={perm}
                                     onClick={() => togglePermission(perm)}
                                     className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${newKeyPermissions.includes(perm)
-                                            ? 'bg-primary text-primary-foreground border-primary'
-                                            : 'border-border hover:bg-secondary'
+                                        ? 'bg-primary text-primary-foreground border-primary'
+                                        : 'border-border hover:bg-secondary'
                                         }`}
                                 >
                                     {permissionLabels[perm].label}
@@ -404,6 +554,77 @@ export function ApiPage() {
                 </div>
                 <ModalFooter>
                     <Button variant="primary" onClick={() => setCreatedKey(null)}>我知道了</Button>
+                </ModalFooter>
+            </Modal>
+
+            {/* 创建定时任务弹窗 */}
+            <Modal
+                isOpen={isCreateTaskModalOpen}
+                onClose={() => setIsCreateTaskModalOpen(false)}
+                title="创建定时任务"
+            >
+                <div className="space-y-4">
+                    <Input
+                        label="任务名称"
+                        placeholder="例如: 每日同步用户数据"
+                        value={taskName}
+                        onChange={(e) => setTaskName(e.target.value)}
+                    />
+
+                    <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-2 block">选择模板</label>
+                        <select
+                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            value={taskTemplateId}
+                            onChange={(e) => setTaskTemplateId(e.target.value)}
+                        >
+                            <option value="">-- 请选择模板 --</option>
+                            {templates.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <Input
+                                label="Cron 表达式"
+                                value={taskCron}
+                                onChange={(e) => setTaskCron(e.target.value)}
+                                placeholder="* * * * *"
+                            />
+                        </div>
+                        <div className="w-32">
+                            <Input
+                                label="生成条数"
+                                type="number"
+                                value={taskRowCount}
+                                onChange={(e) => setTaskRowCount(parseInt(e.target.value))}
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-2 block">快捷预设 (Cron)</label>
+                        <div className="flex flex-wrap gap-2">
+                            {cronPresets.slice(0, 6).map(preset => (
+                                <button
+                                    key={preset.expression}
+                                    onClick={() => setTaskCron(preset.expression)}
+                                    className="text-xs px-2 py-1 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors"
+                                    title={preset.description}
+                                >
+                                    {preset.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <ModalFooter>
+                    <Button variant="ghost" onClick={() => setIsCreateTaskModalOpen(false)}>取消</Button>
+                    <Button variant="primary" onClick={handleCreateTask} disabled={isCreatingTask || !taskName || !taskTemplateId}>
+                        {isCreatingTask ? '创建中...' : '创建任务'}
+                    </Button>
                 </ModalFooter>
             </Modal>
         </div>

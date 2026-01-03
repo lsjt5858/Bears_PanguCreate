@@ -44,6 +44,10 @@ def create_app(config_class=None):
     app.register_blueprint(api_key_bp)
     app.register_blueprint(scheduler_bp)
     
+    # 初始化调度器
+    from services.scheduler_service import scheduler_service
+    scheduler_service.init_scheduler(app)
+    
     # 健康检查端点
     @app.route("/api/health", methods=["GET"])
     def health():
