@@ -113,3 +113,88 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
+
+// ==========================================
+// 认证相关 API
+// ==========================================
+
+export interface User {
+  id: number
+  username: string
+  email: string
+  avatar?: string
+  nickname?: string
+  role?: string
+  created_at?: string
+  [key: string]: unknown
+}
+
+export interface LoginResponse {
+  message: string
+  data: {
+    access_token: string
+    refresh_token: string
+    user: User
+  }
+}
+
+export interface RegisterResponse {
+  message: string
+  data: {
+    access_token: string
+    refresh_token: string
+    user: User
+  }
+}
+
+// 登录
+export async function login(data: { username?: string, email?: string, password: string }): Promise<LoginResponse> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  
+  const result = await res.json()
+  
+  if (!res.ok) {
+    throw new Error(result.error || '登录失败')
+  }
+  
+  return result
+}
+
+// 注册
+export async function register(data: { username: string, email: string, password: string }): Promise<RegisterResponse> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  
+  const result = await res.json()
+  
+  if (!res.ok) {
+    throw new Error(result.error || '注册失败')
+  }
+  
+  return result
+}
+
+// 获取当前用户信息
+export async function getCurrentUser(token: string): Promise<User> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    method: 'GET',
+    headers: { 
+      'Authorization': `Bearer ${token}` 
+    },
+  })
+  
+  const result = await res.json()
+  
+  if (!res.ok) {
+    throw new Error(result.error || '获取用户信息失败')
+  }
+  
+  return result.user
+}
