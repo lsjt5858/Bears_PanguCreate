@@ -5,7 +5,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from flask import Blueprint, jsonify, request, g, current_app
+from flask import Blueprint, jsonify, request, g
 from datetime import datetime
 
 from middleware import login_required
@@ -99,8 +99,7 @@ def create_task():
         output_config=data.get('output_config'),
         timezone=data.get('timezone', 'Asia/Shanghai'),
         max_runs=data.get('max_runs'),
-        expires_at=expires_at,
-        app=current_app._get_current_object()
+        expires_at=expires_at
     )
     
     if error:
@@ -129,7 +128,6 @@ def update_task(task_id):
     task, error = scheduler_service.update_task(
         task_id=task_id,
         user_id=user.id,
-        app=current_app._get_current_object(),
         **data
     )
     
@@ -174,10 +172,7 @@ def resume_task(task_id):
     """恢复任务"""
     user = g.current_user
     
-    success, error = scheduler_service.resume_task(
-        task_id, user.id,
-        app=current_app._get_current_object()
-    )
+    success, error = scheduler_service.resume_task(task_id, user.id)
     if not success:
         return jsonify({'error': error}), 400
     

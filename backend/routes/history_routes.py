@@ -56,7 +56,7 @@ def list_history():
     )
     
     return jsonify({
-        'data': [r.to_dict(include_fields=False) for r in records],
+        'data': [r.to_dict(include_fields=True) for r in records],
         'pagination': {
             'page': page,
             'page_size': page_size,

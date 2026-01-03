@@ -142,9 +142,13 @@ function App() {
       case 'history':
         return <HistoryPage onReuse={(record) => {
           // 复用历史配置
-          setFields(record.fields)
-          setRecordCount(record.count)
-          handlePageChange('generator')
+          if (record.fields && record.fields.length > 0) {
+            setFields(record.fields)
+            setRecordCount(record.count || 10)
+            handlePageChange('generator')
+          } else {
+            alert('该记录没有字段配置，无法复用')
+          }
         }} />
 
       case 'datasource':

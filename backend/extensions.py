@@ -28,6 +28,7 @@ def init_extensions(app):
     with app.app_context():
         db.create_all()
     
-    # 初始化调度器（可选，生产环境启用）
-    # from services.scheduler_service import scheduler_service
-    # scheduler_service.init_scheduler(app)
+    # 初始化调度器（开发环境也启用）
+    if not app.config.get('TESTING'):
+        from services.scheduler_service import scheduler_service
+        scheduler_service.init_scheduler(app)

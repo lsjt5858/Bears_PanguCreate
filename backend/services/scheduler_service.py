@@ -21,6 +21,7 @@ class SchedulerService:
     
     def __init__(self):
         self._scheduler = None
+        self._app = None
     
     def init_scheduler(self, app):
         """初始化调度器"""
@@ -32,13 +33,12 @@ class SchedulerService:
             return
 
         from apscheduler.schedulers.background import BackgroundScheduler
-        from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
         from apscheduler.executors.pool import ThreadPoolExecutor
         
+        # 保存 app 引用
+        self._app = app
+        
         print("Initializing Scheduler...")
-        jobstores = {
-            'default': SQLAlchemyJobStore(url=app.config['SQLALCHEMY_DATABASE_URI'])
-        }
         executors = {
             'default': ThreadPoolExecutor(10)
         }
@@ -49,7 +49,6 @@ class SchedulerService:
         }
         
         self._scheduler = BackgroundScheduler(
-            jobstores=jobstores,
             executors=executors,
             job_defaults=job_defaults,
             timezone='Asia/Shanghai'
@@ -61,16 +60,16 @@ class SchedulerService:
         
         # 加载已有任务
         with app.app_context():
-            self._load_existing_tasks(app)
+            self._load_existing_tasks()
     
-    def _load_existing_tasks(self, app):
+    def _load_existing_tasks(self):
         """加载已有的活跃任务"""
         tasks = ScheduledTask.find_active_tasks()
         print(f"Found {len(tasks)} active tasks to schedule.")
         for task in tasks:
-            self._add_job(task, app)
+            self._add_job(task)
     
-    def _add_job(self, task: ScheduledTask, app=None):
+    def _add_job(self, task: ScheduledTask):
         """添加任务到调度器"""
         if not self._scheduler:
             return
@@ -81,18 +80,20 @@ class SchedulerService:
             # 解析 cron 表达式
             trigger = CronTrigger.from_crontab(task.cron_expression, timezone=task.timezone)
             
-            # 添加任务
+            # 添加任务 - 只传递 task_uuid，不传递 app
             self._scheduler.add_job(
                 func=self._execute_task,
                 trigger=trigger,
                 id=f'task_{task.uuid}',
-                args=[task.uuid, app],
+                args=[task.uuid],
                 replace_existing=True
             )
             
             # 更新下次执行时间
             task.next_run_at = trigger.get_next_fire_time(None, datetime.now())
             db.session.commit()
+            
+            print(f"Scheduled task {task.uuid}: {task.name}")
             
         except Exception as e:
             print(f"Failed to add job {task.uuid}: {e}")
@@ -108,11 +109,11 @@ class SchedulerService:
         except:
             pass
     
-    def _execute_task(self, task_uuid: str, app=None):
+    def _execute_task(self, task_uuid: str):
         """执行任务"""
         print(f"Executing task {task_uuid}...")
-        if app:
-            with app.app_context():
+        if self._app:
+            with self._app.app_context():
                 self._do_execute_task(task_uuid)
         else:
             self._do_execute_task(task_uuid)
@@ -152,6 +153,24 @@ class SchedulerService:
             
             # 处理输出
             output_status, output_message = self._handle_output(task, result)
+            
+            # 创建历史记录
+            from services.history_service import history_service
+            try:
+                history_service.create_history(
+                    user_id=task.user_id,
+                    fields=fields,
+                    row_count=count,
+                    name=f"[定时] {task.name}",
+                    project_id=task.project_id,
+                    template_id=task.template_id,
+                    export_format=task.export_format,
+                    table_name=task.table_name,
+                    execution_time_ms=duration_ms,
+                    data_size_bytes=data_size
+                )
+            except Exception as he:
+                print(f"Failed to create history for task {task_uuid}: {he}")
             
             # 更新日志
             log.finished_at = datetime.utcnow()
@@ -248,8 +267,7 @@ class SchedulerService:
         output_config: dict = None,
         timezone: str = 'Asia/Shanghai',
         max_runs: int = None,
-        expires_at: datetime = None,
-        app=None
+        expires_at: datetime = None
     ) -> Tuple[Optional[ScheduledTask], Optional[str]]:
         """创建定时任务"""
         # 验证 cron 表达式
@@ -288,8 +306,7 @@ class SchedulerService:
         task.save()
         
         # 添加到调度器
-        if app:
-            self._add_job(task, app)
+        self._add_job(task)
         
         return task, None
     
@@ -305,7 +322,6 @@ class SchedulerService:
         self,
         task_id: str,
         user_id: int,
-        app=None,
         **kwargs
     ) -> Tuple[Optional[ScheduledTask], Optional[str]]:
         """更新任务"""
@@ -354,8 +370,8 @@ class SchedulerService:
         task.save()
         
         # 更新调度器中的任务
-        if task.is_active and app:
-            self._add_job(task, app)
+        if task.is_active:
+            self._add_job(task)
         else:
             self._remove_job(task.uuid)
         
@@ -395,7 +411,7 @@ class SchedulerService:
         self._remove_job(task.uuid)
         return True, None
     
-    def resume_task(self, task_id: str, user_id: int, app=None) -> Tuple[bool, Optional[str]]:
+    def resume_task(self, task_id: str, user_id: int) -> Tuple[bool, Optional[str]]:
         """恢复任务"""
         task = ScheduledTask.find_by_uuid(task_id)
         if not task:
@@ -416,8 +432,7 @@ class SchedulerService:
         
         task.save()
         
-        if app:
-            self._add_job(task, app)
+        self._add_job(task)
         
         return True, None
     
