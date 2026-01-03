@@ -63,9 +63,9 @@
 ### 页面 ✅ (UI 完成，使用模拟数据)
 | 页面 | 文件 | UI | 后端 |
 |------|------|------|------|
-| 仪表盘 | `pages/DashboardPage.tsx` | ✅ | ❌ 模拟数据 |
+| 仪表盘 | `pages/DashboardPage.tsx` | ✅ | ✅ 真实数据 |
 | 历史记录 | `pages/HistoryPage.tsx` | ✅ | ❌ 模拟数据 |
-| 模板市场 | `pages/TemplateMarketPage.tsx` | ✅ | ❌ 模拟数据 |
+| 模板市场 | `pages/TemplateMarketPage.tsx` | ✅ | ✅ 真实数据 |
 | 数据源管理 | `pages/DataSourcePage.tsx` | ✅ | ❌ 模拟数据 |
 | API 管理 | `pages/ApiPage.tsx` | ✅ | ❌ 模拟数据 |
 | 关联数据 | `pages/RelationPage.tsx` | ✅ | ❌ 模拟数据 |
@@ -110,9 +110,9 @@
 
 | 任务 | 文件 | 状态 |
 |------|------|------|
-| 统计服务 | `services/stats_service.py` | ❌ 待开发 |
-| 统计路由 | `routes/stats_routes.py` | ❌ 待开发 |
-| 前端对接 | `pages/DashboardPage.tsx` (更新) | ❌ 待开发 |
+| 统计服务 | `services/stats_service.py` | ✅ 已完成 |
+| 统计路由 | `routes/stats_routes.py` | ✅ 已完成 |
+| 前端对接 | `pages/DashboardPage.tsx` (更新) | ✅ 已完成 |
 
 ### 3.4 历史记录后端（优先级：中）
 ```
@@ -182,9 +182,9 @@
 4. ❌ 用户认证系统 (JWT)
 
 ### Sprint 2: 核心企业功能 (2-3 天)
-5. ❌ 仪表盘后端 + 前端对接
+5. ✅ 仪表盘后端 + 前端对接
 6. ❌ 历史记录后端 + 前端对接
-7. ❌ 模板市场后端 (评分、下载统计)
+7. ✅ 模板市场后端 (评分、下载统计)
 
 ### Sprint 3: 高级功能 (3-4 天)
 8. ❌ API 密钥管理后端

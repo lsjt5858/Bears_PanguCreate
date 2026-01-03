@@ -20,6 +20,8 @@ def init_extensions(app):
     
     # 导入所有模型以确保表被创建
     from models import User, Project, GenerationHistory
+    from models.template import Template as TemplateModel, Tag, TemplateRating, TemplateFavorite, TemplateDownload
+    from models.api_key import ApiKey, ApiKeyUsageLog
     
     # 在应用上下文中创建所有表
     with app.app_context():

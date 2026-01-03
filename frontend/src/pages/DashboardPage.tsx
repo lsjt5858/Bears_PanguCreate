@@ -6,65 +6,14 @@ import {
     TrendingUp,
     TrendingDown,
     Clock,
-    Star
+    Star,
+    Loader2,
+    AlertCircle
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import type { DashboardStats, TrendData, ActivityLog } from '@/lib/types'
-
-// 模拟数据
-const mockStats: DashboardStats = {
-    totalGenerated: 128470,
-    totalTemplates: 24,
-    totalMembers: 8,
-    apiCalls: 3420,
-    generatedThisMonth: 45230,
-    generatedLastMonth: 38900,
-}
-
-const mockTrendData: TrendData[] = [
-    { date: '2024-01', count: 12000 },
-    { date: '2024-02', count: 18500 },
-    { date: '2024-03', count: 15200 },
-    { date: '2024-04', count: 22800 },
-    { date: '2024-05', count: 28400 },
-    { date: '2024-06', count: 35600 },
-    { date: '2024-07', count: 45230 },
-]
-
-const mockActivities: ActivityLog[] = [
-    {
-        id: '1',
-        userId: '1',
-        user: { id: '1', name: '张三', email: '', role: 'admin', createdAt: '' },
-        action: '生成数据',
-        target: '用户注册数据模板 (1000条)',
-        createdAt: '2024-07-15T10:30:00.000Z',
-    },
-    {
-        id: '2',
-        userId: '2',
-        user: { id: '2', name: '李四', email: '', role: 'member', createdAt: '' },
-        action: '创建模板',
-        target: '订单测试数据',
-        createdAt: '2024-07-15T09:45:00.000Z',
-    },
-    {
-        id: '3',
-        userId: '1',
-        user: { id: '1', name: '张三', email: '', role: 'admin', createdAt: '' },
-        action: '导出数据',
-        target: 'CSV格式 (5000条)',
-        createdAt: '2024-07-15T09:20:00.000Z',
-    },
-    {
-        id: '4',
-        userId: '3',
-        user: { id: '3', name: '王五', email: '', role: 'lead', createdAt: '' },
-        action: 'API调用',
-        target: '/api/generate',
-        createdAt: '2024-07-15T08:55:00.000Z',
-    },
-]
+import { useEffect, useState } from 'react'
+import { fetchDashboardStats, fetchTrendData, fetchRecentActivities } from '@/lib/api'
 
 const popularTemplates = [
     { name: '用户注册数据', downloads: 1234, rating: 4.8 },
@@ -74,7 +23,73 @@ const popularTemplates = [
 ]
 
 export function DashboardPage() {
-    const growthRate = ((mockStats.generatedThisMonth - mockStats.generatedLastMonth) / mockStats.generatedLastMonth * 100).toFixed(1)
+    const [stats, setStats] = useState<DashboardStats | null>(null)
+    const [trendData, setTrendData] = useState<TrendData[]>([])
+    const [activities, setActivities] = useState<ActivityLog[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setLoading(true)
+                const [statsData, trend, activitiesData] = await Promise.all([
+                    fetchDashboardStats(),
+                    fetchTrendData(),
+                    fetchRecentActivities()
+                ])
+                setStats(statsData)
+                setTrendData(trend)
+                setActivities(activitiesData)
+                setError(null)
+            } catch (err) {
+                console.error(err)
+                setError('无法加载仪表盘数据，请稍后重试。')
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadData()
+    }, [])
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex items-center justify-center h-full">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <p>正在加载数据...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="flex-1 flex items-center justify-center h-full p-6">
+                <Card className="max-w-md w-full border-destructive/50">
+                    <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
+                        <AlertCircle className="h-10 w-10 text-destructive" />
+                        <div className="space-y-2">
+                            <h3 className="font-bold">加载失败</h3>
+                            <p className="text-sm text-muted-foreground">{error}</p>
+                        </div>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="text-sm text-primary hover:underline"
+                        >
+                            重试
+                        </button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    if (!stats) return null
+
+    const growthRate = stats.generatedLastMonth > 0
+        ? ((stats.generatedThisMonth - stats.generatedLastMonth) / stats.generatedLastMonth * 100).toFixed(1)
+        : '100.0'
     const isPositiveGrowth = parseFloat(growthRate) > 0
 
     return (
@@ -88,7 +103,7 @@ export function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <StatsCard
                     title="数据生成总量"
-                    value={mockStats.totalGenerated.toLocaleString()}
+                    value={stats.totalGenerated.toLocaleString()}
                     icon={<BarChart3 className="h-5 w-5" />}
                     trend={isPositiveGrowth ? 'up' : 'down'}
                     trendValue={`${isPositiveGrowth ? '+' : ''}${growthRate}%`}
@@ -96,21 +111,18 @@ export function DashboardPage() {
                 />
                 <StatsCard
                     title="模板数量"
-                    value={mockStats.totalTemplates.toString()}
+                    value={stats.totalTemplates.toString()}
                     icon={<FileJson className="h-5 w-5" />}
                 />
                 <StatsCard
                     title="团队成员"
-                    value={mockStats.totalMembers.toString()}
+                    value={stats.totalMembers.toString()}
                     icon={<Users className="h-5 w-5" />}
                 />
                 <StatsCard
                     title="API 调用次数"
-                    value={mockStats.apiCalls.toLocaleString()}
+                    value={stats.apiCalls.toLocaleString()}
                     icon={<Zap className="h-5 w-5" />}
-                    trend="up"
-                    trendValue="+12.5%"
-                    trendLabel="本周"
                 />
             </div>
 
@@ -125,32 +137,42 @@ export function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-64 flex items-end gap-2">
-                            {mockTrendData.map((item, index) => {
-                                const maxCount = Math.max(...mockTrendData.map(d => d.count))
-                                const height = (item.count / maxCount) * 100
-                                return (
-                                    <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                                        <div className="w-full bg-secondary rounded-t-sm relative group">
-                                            <div
-                                                className="bg-primary rounded-t-sm transition-all hover:bg-primary/80"
-                                                style={{ height: `${height * 2}px` }}
-                                            />
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-card border border-border rounded px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                {item.count.toLocaleString()} 条
+                        <div className="h-64 flex items-end gap-2 px-2">
+                            {trendData.length > 0 ? (
+                                trendData.map((item, index) => {
+                                    const maxCount = Math.max(...trendData.map(d => d.count))
+                                    const height = maxCount > 0 ? (item.count / maxCount) * 100 : 0
+                                    return (
+                                        <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
+                                            <div className="w-full bg-secondary/20 rounded-t-sm relative group h-full flex items-end">
+                                                <div
+                                                    className="w-full bg-primary rounded-t-sm transition-all hover:bg-primary/80"
+                                                    style={{ height: `${height}%` }}
+                                                />
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-card border border-border rounded px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 shadow-sm">
+                                                    <p className="font-bold">{item.count.toLocaleString()} 条</p>
+                                                    <p className="text-[10px] text-muted-foreground">{item.date}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                        <span className="text-xs text-muted-foreground">
-                                            {item.date.split('-')[1]}月
-                                        </span>
-                                    </div>
-                                )
-                            })}
+                                    )
+                                })
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                                    暂无趋势数据
+                                </div>
+                            )}
                         </div>
+                        {trendData.length > 0 && (
+                            <div className="flex justify-between mt-4 text-xs text-muted-foreground px-2">
+                                <span>{trendData[0].date}</span>
+                                <span>{trendData[trendData.length - 1].date}</span>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* 热门模板 */}
+                {/* 热门模板 (暂保留Mock数据，因为API尚不支持) */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -187,23 +209,29 @@ export function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {mockActivities.map((activity) => (
-                            <div key={activity.id} className="flex items-start gap-4">
-                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-green-600 flex items-center justify-center text-xs font-semibold text-primary-foreground flex-shrink-0">
-                                    {activity.user.name.charAt(0)}
+                        {activities.length > 0 ? (
+                            activities.map((activity) => (
+                                <div key={activity.id} className="flex items-start gap-4">
+                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-green-600 flex items-center justify-center text-xs font-semibold text-primary-foreground flex-shrink-0">
+                                        {activity.user.name.charAt(0)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-foreground">
+                                            <span className="font-medium">{activity.user.name}</span>
+                                            <span className="text-muted-foreground"> {activity.action}：</span>
+                                            <span className="text-primary">{activity.target}</span>
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            {new Date(activity.createdAt).toLocaleString('zh-CN')}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-foreground">
-                                        <span className="font-medium">{activity.user.name}</span>
-                                        <span className="text-muted-foreground"> {activity.action}：</span>
-                                        <span className="text-primary">{activity.target}</span>
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                        {new Date(activity.createdAt).toLocaleString('zh-CN')}
-                                    </p>
-                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-4 text-muted-foreground text-sm">
+                                暂无最近活动
                             </div>
-                        ))}
+                        )}
                     </div>
                 </CardContent>
             </Card>

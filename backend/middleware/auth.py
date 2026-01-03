@@ -28,6 +28,26 @@ def _get_token_from_header() -> Optional[str]:
     return parts[1]
 
 
+def _get_api_key_from_header() -> Optional[str]:
+    """从请求头获取 API 密钥"""
+    # 支持多种方式传递 API 密钥
+    # 1. X-API-Key 头
+    api_key = request.headers.get('X-API-Key')
+    if api_key:
+        return api_key
+    
+    # 2. Authorization: Bearer df_xxx (以 df_ 开头的视为 API 密钥)
+    auth_header = request.headers.get('Authorization')
+    if auth_header:
+        parts = auth_header.split()
+        if len(parts) == 2 and parts[0].lower() == 'bearer':
+            token = parts[1]
+            if token.startswith('df_'):
+                return token
+    
+    return None
+
+
 def _verify_token(token: str) -> tuple[Optional[User], Optional[str]]:
     """验证 Token 并返回用户"""
     from flask import current_app
@@ -57,6 +77,21 @@ def _verify_token(token: str) -> tuple[Optional[User], Optional[str]]:
         return None, "无效的 Token"
 
 
+def _verify_api_key(key: str) -> tuple[Optional[User], Optional[str], Optional['ApiKey']]:
+    """验证 API 密钥并返回用户"""
+    from models.api_key import ApiKey
+    
+    api_key = ApiKey.verify_key(key)
+    if not api_key:
+        return None, "无效的 API 密钥", None
+    
+    user = api_key.user
+    if not user or not user.is_active:
+        return None, "用户不存在或已被禁用", None
+    
+    return user, None, api_key
+
+
 def get_current_user() -> Optional[User]:
     """获取当前登录用户（不强制要求登录）"""
     if hasattr(g, 'current_user'):
@@ -73,10 +108,22 @@ def get_current_user() -> Optional[User]:
 def login_required(f):
     """
     需要登录的装饰器
+    支持 JWT Token 和 API 密钥两种认证方式
     验证失败返回 401
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+        # 先尝试 API 密钥认证
+        api_key_str = _get_api_key_from_header()
+        if api_key_str:
+            user, error, api_key = _verify_api_key(api_key_str)
+            if error:
+                return jsonify({'error': error}), 401
+            g.current_user = user
+            g.current_api_key = api_key
+            return f(*args, **kwargs)
+        
+        # 再尝试 JWT Token 认证
         token = _get_token_from_header()
         if not token:
             return jsonify({'error': '未提供认证信息'}), 401
@@ -86,9 +133,41 @@ def login_required(f):
             return jsonify({'error': error}), 401
         
         g.current_user = user
+        g.current_api_key = None
         return f(*args, **kwargs)
     
     return decorated
+
+
+def api_key_required(permission: str = 'read'):
+    """
+    需要 API 密钥认证的装饰器
+    permission: 所需权限 (read, write, admin)
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            api_key_str = _get_api_key_from_header()
+            if not api_key_str:
+                return jsonify({'error': '未提供 API 密钥'}), 401
+            
+            user, error, api_key = _verify_api_key(api_key_str)
+            if error:
+                return jsonify({'error': error}), 401
+            
+            # 检查权限
+            if not api_key.has_permission(permission):
+                return jsonify({'error': f'API 密钥缺少 {permission} 权限'}), 403
+            
+            g.current_user = user
+            g.current_api_key = api_key
+            
+            # 记录使用（异步处理更好，这里简化）
+            api_key.record_usage(request.remote_addr)
+            
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 
 def admin_required(f):
@@ -114,12 +193,22 @@ def optional_auth(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+        # 先尝试 API 密钥
+        api_key_str = _get_api_key_from_header()
+        if api_key_str:
+            user, _, api_key = _verify_api_key(api_key_str)
+            g.current_user = user
+            g.current_api_key = api_key
+            return f(*args, **kwargs)
+        
+        # 再尝试 JWT Token
         token = _get_token_from_header()
         if token:
             user, _ = _verify_token(token)
             g.current_user = user
         else:
             g.current_user = None
+        g.current_api_key = None
         return f(*args, **kwargs)
     
     return decorated

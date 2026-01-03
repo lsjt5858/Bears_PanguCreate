@@ -7,7 +7,9 @@ from .auth import (
     project_access_required,
     project_admin_required,
     optional_auth,
-    get_current_user
+    get_current_user,
+    api_key_required,
+    rate_limit
 )
 
 __all__ = [
@@ -16,5 +18,7 @@ __all__ = [
     'project_access_required',
     'project_admin_required',
     'optional_auth',
-    'get_current_user'
+    'get_current_user',
+    'api_key_required',
+    'rate_limit'
 ]
