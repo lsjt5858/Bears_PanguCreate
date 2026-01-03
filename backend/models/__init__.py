@@ -10,6 +10,7 @@ import uuid as uuid_lib
 from .base import BaseModel
 from .user import User
 from .project import Project, project_members
+from .history import GenerationHistory
 
 
 @dataclass

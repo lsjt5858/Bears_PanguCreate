@@ -6,6 +6,7 @@ from .generate_routes import generate_bp
 from .templates_routes import templates_bp
 from .export_routes import export_bp
 from .auth_routes import auth_bp
+from .history_routes import history_bp
 
 __all__ = [
     "types_bp",
@@ -13,4 +14,5 @@ __all__ = [
     "templates_bp",
     "export_bp",
     "auth_bp",
+    "history_bp",
 ]
