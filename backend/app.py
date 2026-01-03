@@ -12,19 +12,25 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from datetime import datetime
 
+from config import get_config
+from extensions import init_extensions, db
 from routes import types_bp, generate_bp, templates_bp, export_bp
 
 
-def create_app():
+def create_app(config_class=None):
     """应用工厂函数"""
     app = Flask(__name__)
     
-    # CORS配置
-    CORS(app, origins=[
-        "http://localhost:5173", 
-        "http://localhost:3000", 
-        "http://127.0.0.1:5173"
-    ])
+    # 加载配置
+    if config_class is None:
+        config_class = get_config()
+    app.config.from_object(config_class)
+    
+    # 初始化扩展 (包括 SQLAlchemy)
+    init_extensions(app)
+    
+    # CORS 配置
+    CORS(app, origins=app.config.get('CORS_ORIGINS', ['*']))
     
     # 注册蓝图
     app.register_blueprint(types_bp)
@@ -38,8 +44,25 @@ def create_app():
         return jsonify({
             "status": "ok", 
             "timestamp": datetime.now().isoformat(),
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "database": "connected"
         })
+    
+    # 数据库状态检查端点
+    @app.route("/api/db-status", methods=["GET"])
+    def db_status():
+        try:
+            # 执行简单查询测试数据库连接
+            db.session.execute(db.text('SELECT 1'))
+            return jsonify({
+                "status": "ok",
+                "message": "Database connection successful"
+            })
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": str(e)
+            }), 500
     
     return app
 
