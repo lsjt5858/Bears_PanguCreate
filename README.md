@@ -97,8 +97,8 @@
 
 | # | 任务 | 模块 | 预计工时 | 状态 |
 |---|------|------|----------|------|
-| 37 | 个人资料弹窗 `modals/UserProfileModal.tsx` | 前端 | 2h | ❌ |
-| 38 | 项目设置弹窗 `modals/ProjectSettingsModal.tsx` | 前端 | 2h | ❌ |
+| 37 | 个人资料弹窗 `modals/UserProfileModal.tsx` | 前端 | 2h | ✅ |
+| 38 | 项目设置弹窗 `modals/ProjectSettingsModal.tsx` | 前端 | 2h | ✅ |
 | 39 | 通知系统 | 全栈 | 4h | ❌ |
 | 40 | Webhook 通知 | 后端 | 3h | ❌ |
 | 41 | 数据脱敏功能 | 后端 | 3h | ❌ |

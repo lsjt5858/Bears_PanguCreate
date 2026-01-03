@@ -13,7 +13,11 @@ import {
 } from 'lucide-react'
 import { UserMenu } from './UserMenu'
 import { ProjectSwitcher } from './ProjectSwitcher'
+import { UserProfileModal } from '@/components/modals/UserProfileModal'
+import { ProjectSettingsModal } from '@/components/modals/ProjectSettingsModal'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import type { Project } from '@/lib/types'
 
 type NavItem = {
     id: string
@@ -37,6 +41,15 @@ interface HeaderProps {
 }
 
 export function Header({ activePage, onPageChange }: HeaderProps) {
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+    const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
+    const [editingProject, setEditingProject] = useState<Project | null>(null)
+
+    const handleProjectSettings = (project: Project) => {
+        setEditingProject(project)
+        setIsProjectSettingsOpen(true)
+    }
+
     return (
         <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
             {/* 左侧: Logo + 项目切换 */}
@@ -51,8 +64,9 @@ export function Header({ activePage, onPageChange }: HeaderProps) {
                     </span>
                 </div>
 
+
                 <div className="hidden md:block">
-                    <ProjectSwitcher />
+                    <ProjectSwitcher onProjectSettings={handleProjectSettings} />
                 </div>
             </div>
 
@@ -92,10 +106,25 @@ export function Header({ activePage, onPageChange }: HeaderProps) {
                     <Settings className="h-4 w-4" />
                 </button>
 
+
                 <div className="ml-2">
-                    <UserMenu />
+                    <UserMenu
+                        onProfileClick={() => setIsUserModalOpen(true)}
+                        onApiKeysClick={() => onPageChange('api')}
+                    />
                 </div>
             </div>
+
+            <UserProfileModal
+                isOpen={isUserModalOpen}
+                onClose={() => setIsUserModalOpen(false)}
+            />
+
+            <ProjectSettingsModal
+                isOpen={isProjectSettingsOpen}
+                onClose={() => setIsProjectSettingsOpen(false)}
+                project={editingProject}
+            />
         </header>
     )
 }
