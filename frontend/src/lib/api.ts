@@ -357,3 +357,71 @@ export async function fetchRecentActivities(limit: number = 10): Promise<Activit
     createdAt: item.created_at
   }))
 }
+
+// ==========================================
+// API 密钥管理
+// ==========================================
+
+import type { ApiKey, ApiKeyPermission } from './types'
+
+export async function fetchApiKeys(): Promise<ApiKey[]> {
+  const res = await fetch(`${API_BASE}/api-keys`, {
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('获取密钥列表失败')
+  const result = await res.json()
+  // 转换后端数据格式
+  return result.data.map((key: any) => ({
+    id: key.id,
+    name: key.name,
+    key: key.prefix + '****************' + key.suffix, // 掩码显示
+    permissions: key.permissions || [],
+    callCount: key.call_count || 0,
+    lastUsed: key.last_used_at,
+    expiresAt: key.expires_at,
+    createdAt: key.created_at
+  }))
+}
+
+export async function createApiKey(name: string, permissions: ApiKeyPermission[] = ['read'], expiresAt?: string): Promise<{ apiKey: ApiKey, fullKey: string }> {
+  const res = await fetch(`${API_BASE}/api-keys`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ name, permissions, expires_at: expiresAt })
+  })
+
+  const result = await res.json()
+
+  if (!res.ok) throw new Error(result.error || '创建密钥失败')
+
+  // 后端返回的 data 包含完整的 key
+  const data = result.data
+  return {
+    apiKey: {
+      id: data.id,
+      name: data.name,
+      key: data.key, // 包含完整密钥
+      permissions: data.permissions || [],
+      callCount: 0,
+      createdAt: data.created_at,
+      expiresAt: data.expires_at
+    },
+    fullKey: data.key
+  }
+}
+
+export async function deleteApiKey(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api-keys/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('删除密钥失败')
+}
+
+export async function revokeApiKey(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api-keys/${id}/revoke`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  })
+  if (!res.ok) throw new Error('撤销密钥失败')
+}
