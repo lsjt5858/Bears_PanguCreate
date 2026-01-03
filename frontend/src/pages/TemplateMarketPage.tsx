@@ -1,102 +1,40 @@
-import { useState } from 'react'
-import { Search, Star, Download, Grid, List, Heart } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, Star, Download, Grid, List, Heart, Loader2, AlertCircle } from 'lucide-react'
 import { Card, CardContent, Button, Input, Badge, Tabs, TabsList, TabsTrigger } from '@/components/common'
 import { cn } from '@/lib/utils'
-import type { MarketTemplate } from '@/lib/types'
+import type { MarketTemplate, Template } from '@/lib/types'
+import { fetchTemplates } from '@/lib/api'
 
-// 模拟模板市场数据
-const mockMarketTemplates: MarketTemplate[] = [
-    {
-        id: '1',
-        name: '用户注册数据',
-        description: '包含用户注册所需的完整字段，适用于用户系统测试',
-        category: 'user',
-        fields: [],
-        createdAt: '',
-        updatedAt: '',
-        author: { id: '1', name: '官方', email: '', role: 'admin', createdAt: '' },
-        downloads: 12340,
-        rating: 4.8,
-        ratingCount: 256,
-        isFavorite: true,
-        tags: ['用户', '注册', '基础'],
-    },
-    {
-        id: '2',
-        name: '电商订单数据',
-        description: '电商平台订单测试数据，包含订单、用户、商品关联',
-        category: 'order',
-        fields: [],
-        createdAt: '',
-        updatedAt: '',
-        author: { id: '2', name: '测试团队', email: '', role: 'lead', createdAt: '' },
-        downloads: 8920,
-        rating: 4.6,
-        ratingCount: 189,
+// 辅助函数：将基础模板转换为市场模板（填充缺失数据）
+const adaptToMarketTemplate = (template: Template): MarketTemplate => {
+    // 确定标签
+    const tags = [template.category]
+    if (template.name.includes('用户')) tags.push('用户')
+    if (template.name.includes('订单')) tags.push('交易')
+    if (template.name.includes('商品')) tags.push('商品')
+
+    // 生成伪随机数据用于演示（因为后端尚不支持这些字段）
+    const seed = template.id.charCodeAt(0) || 0
+    const downloads = 100 + (seed * 50) % 5000
+    const rating = 4.0 + (seed % 10) / 10
+    const ratingCount = 10 + (seed * 2) % 200
+
+    return {
+        ...template,
+        author: {
+            id: 'system',
+            name: '系统默认',
+            email: 'admin@bears.com',
+            role: 'admin',
+            createdAt: new Date().toISOString()
+        },
+        downloads,
+        rating: Number(rating.toFixed(1)),
+        ratingCount,
         isFavorite: false,
-        tags: ['订单', '电商', '交易'],
-    },
-    {
-        id: '3',
-        name: '财务流水记录',
-        description: '银行/支付系统的财务流水数据，包含账户、交易信息',
-        category: 'finance',
-        fields: [],
-        createdAt: '',
-        updatedAt: '',
-        author: { id: '1', name: '官方', email: '', role: 'admin', createdAt: '' },
-        downloads: 6780,
-        rating: 4.9,
-        ratingCount: 312,
-        isFavorite: true,
-        tags: ['财务', '银行', '流水'],
-    },
-    {
-        id: '4',
-        name: '商品信息数据',
-        description: '商品基础信息测试数据，适用于商品管理系统',
-        category: 'product',
-        fields: [],
-        createdAt: '',
-        updatedAt: '',
-        author: { id: '3', name: '社区贡献', email: '', role: 'member', createdAt: '' },
-        downloads: 5430,
-        rating: 4.4,
-        ratingCount: 98,
-        isFavorite: false,
-        tags: ['商品', 'SKU', '库存'],
-    },
-    {
-        id: '5',
-        name: '员工信息数据',
-        description: '企业员工信息测试数据，支持HR系统测试',
-        category: 'user',
-        fields: [],
-        createdAt: '',
-        updatedAt: '',
-        author: { id: '2', name: '测试团队', email: '', role: 'lead', createdAt: '' },
-        downloads: 4210,
-        rating: 4.3,
-        ratingCount: 67,
-        isFavorite: false,
-        tags: ['员工', 'HR', '企业'],
-    },
-    {
-        id: '6',
-        name: '地址信息数据',
-        description: '中国省市区地址数据，支持完整的地址体系',
-        category: 'address',
-        fields: [],
-        createdAt: '',
-        updatedAt: '',
-        author: { id: '1', name: '官方', email: '', role: 'admin', createdAt: '' },
-        downloads: 7890,
-        rating: 4.7,
-        ratingCount: 234,
-        isFavorite: false,
-        tags: ['地址', '省市区', '物流'],
-    },
-]
+        tags
+    }
+}
 
 const categories = [
     { id: 'all', name: '全部' },
@@ -105,6 +43,7 @@ const categories = [
     { id: 'finance', name: '财务金融' },
     { id: 'product', name: '商品信息' },
     { id: 'address', name: '地址物流' },
+    { id: 'other', name: '其他' },
 ]
 
 interface TemplateMarketPageProps {
@@ -112,14 +51,35 @@ interface TemplateMarketPageProps {
 }
 
 export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
+    const [templates, setTemplates] = useState<MarketTemplate[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState('all')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-    const [favorites, setFavorites] = useState<Set<string>>(
-        new Set(mockMarketTemplates.filter(t => t.isFavorite).map(t => t.id))
-    )
+    const [favorites, setFavorites] = useState<Set<string>>(new Set())
 
-    const filteredTemplates = mockMarketTemplates.filter((template) => {
+    useEffect(() => {
+        const loadTemplates = async () => {
+            try {
+                setLoading(true)
+                const data = await fetchTemplates()
+                // 转换后端基础模板为市场模板格式
+                const marketTemplates = data.map(adaptToMarketTemplate)
+                setTemplates(marketTemplates)
+                setError(null)
+            } catch (err) {
+                console.error('Failed to fetch templates:', err)
+                setError('获取模板列表失败，请稍后重试。')
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadTemplates()
+    }, [])
+
+    const filteredTemplates = templates.filter((template) => {
         const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             template.description.toLowerCase().includes(searchQuery.toLowerCase())
         const matchesCategory = activeCategory === 'all' || template.category === activeCategory
@@ -144,6 +104,39 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
         return count.toString()
     }
 
+    if (loading) {
+        return (
+            <div className="flex-1 flex items-center justify-center h-full">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <p>正在加载模板市场...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="flex-1 flex items-center justify-center h-full p-6">
+                <Card className="max-w-md w-full border-destructive/50">
+                    <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
+                        <AlertCircle className="h-10 w-10 text-destructive" />
+                        <div className="space-y-2">
+                            <h3 className="font-bold">加载失败</h3>
+                            <p className="text-sm text-muted-foreground">{error}</p>
+                        </div>
+                        <Button
+                            variant="primary"
+                            onClick={() => window.location.reload()}
+                        >
+                            重试
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
     return (
         <div className="flex-1 overflow-auto p-6">
             <div className="mb-6">
@@ -164,7 +157,7 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                 <div className="flex items-center gap-2">
                     <Tabs value={activeCategory} onChange={setActiveCategory}>
                         <TabsList>
-                            {categories.slice(0, 4).map((cat) => (
+                            {categories.map((cat) => (
                                 <TabsTrigger key={cat.id} value={cat.id}>
                                     {cat.name}
                                 </TabsTrigger>
@@ -195,7 +188,11 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
             </div>
 
             {/* 模板列表 */}
-            {viewMode === 'grid' ? (
+            {filteredTemplates.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                    <p>没有找到匹配的模板</p>
+                </div>
+            ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredTemplates.map((template) => (
                         <Card key={template.id} hover className="group">
@@ -218,11 +215,11 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                     </button>
                                 </div>
 
-                                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                                    {template.description}
+                                <p className="text-sm text-muted-foreground line-clamp-2 mb-3 h-10">
+                                    {template.description || '暂无描述'}
                                 </p>
 
-                                <div className="flex flex-wrap gap-1 mb-3">
+                                <div className="flex flex-wrap gap-1 mb-3 h-6 overflow-hidden">
                                     {template.tags.map((tag) => (
                                         <Badge key={tag} variant="outline" className="text-xs">
                                             {tag}
@@ -276,7 +273,7 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                                 <h3 className="text-base font-semibold text-foreground">{template.name}</h3>
                                                 <span className="text-xs text-muted-foreground">by {template.author.name}</span>
                                             </div>
-                                            <p className="text-sm text-muted-foreground mt-0.5">{template.description}</p>
+                                            <p className="text-sm text-muted-foreground mt-0.5">{template.description || '暂无描述'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-6">

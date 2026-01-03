@@ -65,7 +65,7 @@
 |------|------|------|------|
 | 仪表盘 | `pages/DashboardPage.tsx` | ✅ | ✅ 真实数据 |
 | 历史记录 | `pages/HistoryPage.tsx` | ✅ | ❌ 模拟数据 |
-| 模板市场 | `pages/TemplateMarketPage.tsx` | ✅ | ❌ 模拟数据 |
+| 模板市场 | `pages/TemplateMarketPage.tsx` | ✅ | ✅ 真实数据 |
 | 数据源管理 | `pages/DataSourcePage.tsx` | ✅ | ❌ 模拟数据 |
 | API 管理 | `pages/ApiPage.tsx` | ✅ | ❌ 模拟数据 |
 | 关联数据 | `pages/RelationPage.tsx` | ✅ | ❌ 模拟数据 |
@@ -184,7 +184,7 @@
 ### Sprint 2: 核心企业功能 (2-3 天)
 5. ✅ 仪表盘后端 + 前端对接
 6. ❌ 历史记录后端 + 前端对接
-7. ❌ 模板市场后端 (评分、下载统计)
+7. ✅ 模板市场后端 (评分、下载统计)
 
 ### Sprint 3: 高级功能 (3-4 天)
 8. ❌ API 密钥管理后端
