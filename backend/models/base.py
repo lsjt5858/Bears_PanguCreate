@@ -2,6 +2,10 @@
 数据库模型基类
 提供通用字段和方法
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from datetime import datetime
 from extensions import db
 

@@ -18,6 +18,9 @@ def init_extensions(app):
     data_dir = Path(app.root_path) / 'data'
     data_dir.mkdir(exist_ok=True)
     
+    # 导入所有模型以确保表被创建
+    from models import User, Project
+    
     # 在应用上下文中创建所有表
     with app.app_context():
         db.create_all()
