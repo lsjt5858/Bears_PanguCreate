@@ -1,70 +1,17 @@
-import { useState } from 'react'
-import { Search, Filter, Clock, FileJson, FileSpreadsheet, FileCode, RotateCcw, Trash2, ChevronDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, Filter, Clock, FileJson, FileSpreadsheet, FileCode, RotateCcw, Trash2, ChevronDown, Loader2 } from 'lucide-react'
 import { Card, CardContent, Button, Input, Badge } from '@/components/common'
 import type { HistoryRecord, ExportFormat } from '@/lib/types'
+import { fetchHistory, deleteHistory } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
 
-// 模拟历史记录数据
-const mockHistory: HistoryRecord[] = [
-    {
-        id: '1',
-        name: '用户注册测试数据',
-        fields: [
-            { id: '1', name: 'id', type: 'uuid' },
-            { id: '2', name: 'name', type: 'chineseName' },
-            { id: '3', name: 'email', type: 'email' },
-        ],
-        count: 1000,
-        format: 'json',
-        createdAt: '2024-07-15T10:30:00.000Z',
-        projectId: '1',
-    },
-    {
-        id: '2',
-        name: '订单数据生成',
-        fields: [
-            { id: '1', name: 'order_id', type: 'uuid' },
-            { id: '2', name: 'amount', type: 'amount' },
-        ],
-        count: 5000,
-        format: 'csv',
-        createdAt: '2024-07-14T15:20:00.000Z',
-        projectId: '1',
-    },
-    {
-        id: '3',
-        name: '财务流水导入',
-        fields: [
-            { id: '1', name: 'transaction_id', type: 'uuid' },
-            { id: '2', name: 'bank_card', type: 'bankCard' },
-            { id: '3', name: 'amount', type: 'amount' },
-        ],
-        count: 10000,
-        format: 'sql',
-        createdAt: '2024-07-13T09:45:00.000Z',
-        projectId: '1',
-    },
-    {
-        id: '4',
-        name: '商品信息批量生成',
-        fields: [
-            { id: '1', name: 'product_id', type: 'uuid' },
-            { id: '2', name: 'name', type: 'word' },
-            { id: '3', name: 'price', type: 'amount' },
-        ],
-        count: 2000,
-        format: 'json',
-        createdAt: '2024-07-12T14:10:00.000Z',
-        projectId: '1',
-    },
-]
-
-const formatIcons: Record<ExportFormat, React.ReactNode> = {
+const formatIcons: Record<string, React.ReactNode> = {
     json: <FileJson className="h-4 w-4" />,
     csv: <FileSpreadsheet className="h-4 w-4" />,
     sql: <FileCode className="h-4 w-4" />,
 }
 
-const formatColors: Record<ExportFormat, string> = {
+const formatColors: Record<string, string> = {
     json: 'text-yellow-400',
     csv: 'text-green-400',
     sql: 'text-blue-400',
@@ -75,15 +22,73 @@ interface HistoryPageProps {
 }
 
 export function HistoryPage({ onReuse }: HistoryPageProps) {
+    const { isAuthenticated } = useAuth()
+    const [history, setHistory] = useState<HistoryRecord[]>([])
+    const [loading, setLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [filterFormat, setFilterFormat] = useState<ExportFormat | 'all'>('all')
     const [isFilterOpen, setIsFilterOpen] = useState(false)
+    const [page, setPage] = useState(1)
+    const [total, setTotal] = useState(0)
 
-    const filteredHistory = mockHistory.filter((record) => {
-        const matchesSearch = record.name.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesFormat = filterFormat === 'all' || record.format === filterFormat
-        return matchesSearch && matchesFormat
-    })
+    const loadHistory = async () => {
+        if (!isAuthenticated) return
+
+        setLoading(true)
+        try {
+            const res = await fetchHistory({
+                page,
+                page_size: 20,
+                search: searchQuery,
+                format: filterFormat === 'all' ? undefined : filterFormat
+            })
+
+            // Map backend data to HistoryRecord
+            const mappedHistory: HistoryRecord[] = res.data.map((item: any) => ({
+                id: item.id.toString(),
+                name: item.name,
+                fields: item.fields,
+                count: item.row_count, // map row_count to count
+                format: item.export_format as ExportFormat, // map export_format to format
+                createdAt: item.created_at || new Date().toISOString(),
+                projectId: item.project_id?.toString() || ''
+            }))
+
+            setHistory(mappedHistory)
+            setTotal(res.pagination.total)
+        } catch (error) {
+            console.error('Failed to load history:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Load history on mount and when params change
+    useEffect(() => {
+        loadHistory()
+    }, [isAuthenticated, page, filterFormat])
+
+    // Handle search with debounce could be better, but simple effect is okay for small scale
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPage(1) // reset to page 1 on search
+            loadHistory()
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchQuery])
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('确定要删除这条记录吗？')) return
+        try {
+            await deleteHistory(id)
+            // Remove from local state
+            setHistory(prev => prev.filter(item => item.id !== id))
+            setTotal(prev => prev - 1)
+        } catch (error) {
+            console.error('Failed to delete history:', error)
+            alert('删除失败')
+        }
+    }
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
@@ -137,6 +142,7 @@ export function HistoryPage({ onReuse }: HistoryPageProps) {
                                     key={format}
                                     onClick={() => {
                                         setFilterFormat(format)
+                                        setPage(1)
                                         setIsFilterOpen(false)
                                     }}
                                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm ${filterFormat === format ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'
@@ -152,7 +158,12 @@ export function HistoryPage({ onReuse }: HistoryPageProps) {
 
             {/* 历史记录列表 */}
             <div className="space-y-4">
-                {filteredHistory.length === 0 ? (
+                {loading && history.length === 0 ? (
+                    <div className="py-12 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                        <p className="text-muted-foreground mt-2">加载中...</p>
+                    </div>
+                ) : history.length === 0 ? (
                     <Card>
                         <CardContent className="py-12 text-center">
                             <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -161,16 +172,16 @@ export function HistoryPage({ onReuse }: HistoryPageProps) {
                         </CardContent>
                     </Card>
                 ) : (
-                    filteredHistory.map((record) => (
+                    history.map((record) => (
                         <Card key={record.id} hover>
                             <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
                                             <h3 className="text-base font-medium text-foreground">{record.name}</h3>
-                                            <Badge variant="outline" className={formatColors[record.format]}>
+                                            <Badge variant="outline" className={formatColors[record.format] || 'text-gray-400'}>
                                                 {formatIcons[record.format]}
-                                                <span className="ml-1">{record.format.toUpperCase()}</span>
+                                                <span className="ml-1">{record.format ? record.format.toUpperCase() : 'UNKNOWN'}</span>
                                             </Badge>
                                         </div>
                                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -179,15 +190,15 @@ export function HistoryPage({ onReuse }: HistoryPageProps) {
                                                 {formatDate(record.createdAt)}
                                             </span>
                                             <span>生成 {record.count.toLocaleString()} 条数据</span>
-                                            <span>{record.fields.length} 个字段</span>
+                                            <span>{record.fields ? record.fields.length : 0} 个字段</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1 mt-2">
-                                            {record.fields.slice(0, 5).map((field) => (
+                                            {record.fields && record.fields.slice(0, 5).map((field) => (
                                                 <span key={field.id} className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground">
                                                     {field.name}
                                                 </span>
                                             ))}
-                                            {record.fields.length > 5 && (
+                                            {record.fields && record.fields.length > 5 && (
                                                 <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground">
                                                     +{record.fields.length - 5}
                                                 </span>
@@ -209,6 +220,7 @@ export function HistoryPage({ onReuse }: HistoryPageProps) {
                                             size="icon"
                                             className="text-muted-foreground hover:text-destructive"
                                             title="删除"
+                                            onClick={() => handleDelete(record.id)}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
@@ -219,6 +231,15 @@ export function HistoryPage({ onReuse }: HistoryPageProps) {
                     ))
                 )}
             </div>
+
+            {/* 简单的分页加载更多 (可选) */}
+            {total > history.length && !loading && (
+                <div className="mt-4 text-center">
+                    <Button variant="outline" onClick={() => setPage(p => p + 1)}>
+                        加载更多
+                    </Button>
+                </div>
+            )}
         </div>
     )
 }

@@ -46,7 +46,7 @@
 | 10 | 历史记录模型 `models/history.py` | 后端 | 1h | ✅ |
 | 11 | 历史记录服务 `services/history_service.py` | 后端 | 2h | ✅ |
 | 12 | 历史记录路由 `routes/history_routes.py` | 后端 | 1h | ✅ |
-| 13 | 历史记录页面对接真实 API | 前端 | 1h | ❌ |
+| 13 | 历史记录页面对接真实 API | 前端 | 1h | ✅ |
 | 14 | 统计服务 `services/stats_service.py` | 后端 | 2h | ❌ |
 | 15 | 统计路由 `routes/stats_routes.py` | 后端 | 1h | ❌ |
 | 16 | 仪表盘页面对接真实 API | 前端 | 1h | ❌ |
