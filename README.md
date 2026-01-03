@@ -61,9 +61,9 @@
 
 | # | 任务 | 模块 | 预计工时 | 状态 |
 |---|------|------|----------|------|
-| 19 | API 密钥模型 `models/api_key.py` | 后端 | 1h | ❌ |
-| 20 | API 密钥服务 `services/api_key_service.py` | 后端 | 2h | ❌ |
-| 21 | API 密钥路由 `routes/api_key_routes.py` | 后端 | 1h | ❌ |
+| 19 | API 密钥模型 `models/api_key.py` | 后端 | 1h | ✅ |
+| 20 | API 密钥服务 `services/api_key_service.py` | 后端 | 2h | ✅ |
+| 21 | API 密钥路由 `routes/api_key_routes.py` | 后端 | 1h | ✅ |
 | 22 | API 页面对接真实 API | 前端 | 1h | ❌ |
 | 23 | 定时任务模型 `models/scheduled_task.py` | 后端 | 1h | ❌ |
 | 24 | 调度服务 `services/scheduler_service.py` | 后端 | 3h | ❌ |
