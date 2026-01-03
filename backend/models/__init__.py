@@ -6,6 +6,12 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import uuid as uuid_lib
 
+# 数据库模型
+from .base import BaseModel
+from .user import User
+from .project import Project, project_members
+from .history import GenerationHistory
+
 
 @dataclass
 class DataField:

@@ -5,6 +5,10 @@ from .data_generator_service import data_generator_service, DataGeneratorService
 from .data_type_service import data_type_service, DataTypeService
 from .template_service import template_service, TemplateService
 from .export_service import export_service, ExportService
+from .auth_service import auth_service, AuthService
+
+# 从 middleware 导入装饰器
+from middleware import login_required, admin_required, project_access_required, project_admin_required
 
 __all__ = [
     "data_generator_service",
@@ -15,4 +19,10 @@ __all__ = [
     "TemplateService",
     "export_service",
     "ExportService",
+    "auth_service",
+    "AuthService",
+    "login_required",
+    "admin_required",
+    "project_access_required",
+    "project_admin_required",
 ]

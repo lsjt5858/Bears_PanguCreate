@@ -9,7 +9,8 @@ import {
   TemplateMarketPage,
   DataSourcePage,
   ApiPage,
-  RelationPage
+  RelationPage,
+  LoginPage
 } from './pages'
 import {
   fetchDataTypes,
@@ -19,28 +20,41 @@ import {
   type DataType,
   type Template
 } from './lib/api'
+import { useAuth } from './context/AuthContext'
 
 // 有效的页面列表
-const validPages = ['dashboard', 'generator', 'relation', 'templates', 'history', 'datasource', 'api']
+const validPages = ['dashboard', 'generator', 'relation', 'templates', 'history', 'datasource', 'api', 'login']
 
 // 从 URL hash 获取当前页面
 function getPageFromHash(): string {
   const hash = window.location.hash.replace('#', '')
-  return validPages.includes(hash) ? hash : 'generator'
+  return validPages.includes(hash) ? hash : 'dashboard'
 }
 
 function App() {
+  const { isAuthenticated, isLoading } = useAuth()
   // 页面状态 - 从 URL hash 初始化
   const [activePage, setActivePage] = useState(getPageFromHash)
 
   // 监听 hash 变化
   useEffect(() => {
     const handleHashChange = () => {
-      setActivePage(getPageFromHash())
+      const page = getPageFromHash()
+      setActivePage(page)
     }
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
+
+  // 路由保护
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && activePage !== 'login') {
+      window.location.hash = 'login'
+    } else if (!isLoading && isAuthenticated && activePage === 'login') {
+      // 如果已登录但尝试访问登录页，重定向到仪表盘
+      window.location.hash = 'dashboard'
+    }
+  }, [isLoading, isAuthenticated, activePage])
 
   // 改变页面时同时更新 URL hash
   const handlePageChange = useCallback((page: string) => {
@@ -63,9 +77,12 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
-    fetchDataTypes().then(setDataTypes).catch(console.error)
-    fetchTemplates().then(setTemplates).catch(console.error)
-  }, [])
+    // 只有在登录后才获取数据
+    if (isAuthenticated) {
+      fetchDataTypes().then(setDataTypes).catch(console.error)
+      fetchTemplates().then(setTemplates).catch(console.error)
+    }
+  }, [isAuthenticated]) // 添加依赖
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -86,6 +103,9 @@ function App() {
   // 渲染当前页面
   const renderPage = () => {
     switch (activePage) {
+      case 'login':
+        return <LoginPage />
+
       case 'dashboard':
         return <DashboardPage />
 
@@ -139,6 +159,19 @@ function App() {
       default:
         return <DashboardPage />
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  // 如果是登录页面，不显示头部和侧边栏
+  if (activePage === 'login') {
+    return renderPage()
   }
 
   return (
