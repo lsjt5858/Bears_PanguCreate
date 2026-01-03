@@ -15,7 +15,74 @@ generate_bp = Blueprint('generate', __name__, url_prefix='/api')
 @generate_bp.route('/generate', methods=['POST'])
 @optional_auth
 def generate():
-    """生成测试数据"""
+    """
+    生成测试数据
+    ---
+    tags:
+      - 数据生成
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - fields
+          properties:
+            fields:
+              type: array
+              description: 字段配置列表
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                    description: 字段名
+                  type:
+                    type: string
+                    description: 数据类型（如 uuid, chineseName, email 等）
+              example:
+                - id: "1"
+                  name: "id"
+                  type: "uuid"
+                - id: "2"
+                  name: "name"
+                  type: "chineseName"
+            count:
+              type: integer
+              description: 生成数量（1-10000）
+              default: 10
+              example: 100
+            name:
+              type: string
+              description: 生成任务名称（可选）
+            project_id:
+              type: integer
+              description: 项目ID（可选）
+            template_id:
+              type: string
+              description: 模板ID（可选）
+    responses:
+      200:
+        description: 生成成功
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              type: array
+              items:
+                type: object
+            count:
+              type: integer
+            execution_time_ms:
+              type: integer
+      400:
+        description: 参数错误
+    """
     start_time = time.time()
     
     data = request.get_json()

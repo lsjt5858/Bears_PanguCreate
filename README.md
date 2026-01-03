@@ -6,7 +6,7 @@
 
 ## 📊 功能实现进度总览
 
-> 更新时间: 2026-01-03 19:53
+> 更新时间: 2026-01-03 20:13
 
 ```
 核心数据生成:     ████████████████████ 100%  ✅ 可用
@@ -14,7 +14,7 @@
 后端核心 API:     ████████████████████ 100%  ✅ 可用
 数据库持久化:     ████████████████████ 100%  ✅ 完成
 用户认证系统:     ████████████████████ 100%  ✅ 完成
-企业级后端 API:   ░░░░░░░░░░░░░░░░░░░░   0%  ❌ 待开发
+企业级后端 API:   ████████████████░░░░  80%  🔄 进行中
 ```
 
 ---
@@ -64,11 +64,11 @@
 | 19 | API 密钥模型 `models/api_key.py` | 后端 | 1h | ✅ |
 | 20 | API 密钥服务 `services/api_key_service.py` | 后端 | 2h | ✅ |
 | 21 | API 密钥路由 `routes/api_key_routes.py` | 后端 | 1h | ✅ |
-| 22 | API 页面对接真实 API | 前端 | 1h | ❌ |
-| 23 | 定时任务模型 `models/scheduled_task.py` | 后端 | 1h | ❌ |
-| 24 | 调度服务 `services/scheduler_service.py` | 后端 | 3h | ❌ |
-| 25 | 定时任务路由 `routes/scheduler_routes.py` | 后端 | 1h | ❌ |
-| 26 | APScheduler 集成 | 后端 | 2h | ❌ |
+| 22 | API 页面对接真实 API | 前端 | 1h | ✅ |
+| 23 | 定时任务模型 `models/scheduled_task.py` | 后端 | 1h | ✅ |
+| 24 | 调度服务 `services/scheduler_service.py` | 后端 | 3h | ✅ |
+| 25 | 定时任务路由 `routes/scheduler_routes.py` | 后端 | 1h | ✅ |
+| 26 | APScheduler 集成 | 后端 | 2h | ✅ |
 
 **P2 小计: ~12h**
 
@@ -78,16 +78,16 @@
 
 | # | 任务 | 模块 | 预计工时 | 状态 |
 |---|------|------|----------|------|
-| 27 | 数据源模型 `models/datasource.py` | 后端 | 1h | ❌ |
-| 28 | 数据源服务 `services/datasource_service.py` | 后端 | 2h | ❌ |
-| 29 | MySQL 连接器 `connectors/mysql_connector.py` | 后端 | 2h | ❌ |
-| 30 | PostgreSQL 连接器 `connectors/postgres_connector.py` | 后端 | 2h | ❌ |
-| 31 | MongoDB 连接器 `connectors/mongo_connector.py` | 后端 | 2h | ❌ |
-| 32 | 数据源路由 `routes/datasource_routes.py` | 后端 | 1h | ❌ |
-| 33 | 数据源页面对接真实 API | 前端 | 1h | ❌ |
-| 34 | 关系生成服务 `services/relation_generator_service.py` | 后端 | 4h | ❌ |
-| 35 | 关联数据路由 `routes/relation_routes.py` | 后端 | 1h | ❌ |
-| 36 | 关联数据页面对接真实 API | 前端 | 1h | ❌ |
+| 27 | 数据源模型 `models/datasource.py` | 后端 | 1h | ✅ |
+| 28 | 数据源服务 `services/datasource_service.py` | 后端 | 2h | ✅ |
+| 29 | MySQL 连接器 `connectors/mysql_connector.py` | 后端 | 2h | ✅ |
+| 30 | PostgreSQL 连接器 `connectors/postgres_connector.py` | 后端 | 2h | ✅ |
+| 31 | MongoDB 连接器 `connectors/mongo_connector.py` | 后端 | 2h | ✅ |
+| 32 | 数据源路由 `routes/datasource_routes.py` | 后端 | 1h | ✅ |
+| 33 | 数据源页面对接真实 API | 前端 | 1h | ✅ |
+| 34 | 关系生成服务 `services/relation_generator_service.py` | 后端 | 4h | ✅ |
+| 35 | 关联数据路由 `routes/relation_routes.py` | 后端 | 1h | ✅ |
+| 36 | 关联数据页面对接真实 API | 前端 | 1h | ✅ |
 
 **P3 小计: ~17h**
 
@@ -97,15 +97,15 @@
 
 | # | 任务 | 模块 | 预计工时 | 状态 |
 |---|------|------|----------|------|
-| 37 | 个人资料弹窗 `modals/UserProfileModal.tsx` | 前端 | 2h | ❌ |
-| 38 | 项目设置弹窗 `modals/ProjectSettingsModal.tsx` | 前端 | 2h | ❌ |
-| 39 | 通知系统 | 全栈 | 4h | ❌ |
-| 40 | Webhook 通知 | 后端 | 3h | ❌ |
-| 41 | 数据脱敏功能 | 后端 | 3h | ❌ |
-| 42 | 数据验证规则 | 后端 | 2h | ❌ |
-| 43 | 批量导入配置 | 全栈 | 3h | ❌ |
-| 44 | 审计日志 | 后端 | 3h | ❌ |
-| 45 | 系统设置页面 | 全栈 | 3h | ❌ |
+| 37 | 个人资料弹窗 `modals/UserProfileModal.tsx` | 前端 | 2h | ✅ |
+| 38 | 项目设置弹窗 `modals/ProjectSettingsModal.tsx` | 前端 | 2h | ✅ |
+| 39 | 通知系统 | 全栈 | 4h | ✅ |
+| 40 | Webhook 通知 | 后端 | 3h | ✅ |
+| 41 | 数据脱敏功能 | 后端 | 3h | ✅ |
+| 42 | 数据验证规则 | 后端 | 2h | ✅ |
+| 43 | 批量导入配置 | 全栈 | 3h | ✅ |
+| 44 | 审计日志 | 后端 | 3h | ✅ |
+| 45 | 系统设置页面 | 全栈 | 3h | ✅ |
 
 **P4 小计: ~25h**
 
@@ -145,11 +145,12 @@
 |------|------|:--:|:--:|------|
 | 数据生成 | `GeneratorPanel.tsx` | ✅ | ✅ | 完整可用 |
 | 仪表盘 | `DashboardPage.tsx` | ✅ | ✅ | 真实数据 |
-| 历史记录 | `HistoryPage.tsx` | ✅ | ❌ | 模拟数据 |
-| 模板市场 | `TemplateMarketPage.tsx` | ✅ | ✅ | 真实数据 (部分模拟) |
-| 数据源 | `DataSourcePage.tsx` | ✅ | ❌ | 模拟数据 |
-| API 管理 | `ApiPage.tsx` | ✅ | ❌ | 模拟数据 |
-| 关联数据 | `RelationPage.tsx` | ✅ | ❌ | 模拟数据 |
+| 历史记录 | `HistoryPage.tsx` | ✅ | ✅ | 真实数据 |
+| 模板市场 | `TemplateMarketPage.tsx` | ✅ | ✅ | 真实数据 |
+| 数据源 | `DataSourcePage.tsx` | ✅ | ✅ | 真实数据 |
+| API 管理 | `ApiPage.tsx` | ✅ | ✅ | 真实数据 |
+| 关联数据 | `RelationPage.tsx` | ✅ | ✅ | 真实数据 |
+| 定时任务 | `ApiPage.tsx` | ✅ | ✅ | 真实数据 |
 
 ### 5. 前端交互功能 ✅
 
@@ -247,21 +248,52 @@ npm run dev
 | POST | `/api/export/json` | 导出 JSON |
 | POST | `/api/export/csv` | 导出 CSV |
 | POST | `/api/export/sql` | 导出 SQL |
+| POST | `/api/auth/login` | 用户登录 |
+| POST | `/api/auth/register` | 用户注册 |
+| GET | `/api/auth/me` | 获取当前用户 |
+| GET | `/api/history` | 历史记录列表 |
+| DELETE | `/api/history/:id` | 删除历史记录 |
+| GET | `/api/stats/dashboard` | 仪表盘统计 |
+| GET | `/api/stats/trend` | 生成趋势数据 |
+| GET | `/api/stats/activities` | 最近活动 |
+| GET | `/api/api-keys` | API 密钥列表 |
+| POST | `/api/api-keys` | 创建 API 密钥 |
+| DELETE | `/api/api-keys/:id` | 删除 API 密钥 |
+| GET | `/api/scheduled-tasks` | 定时任务列表 |
+| POST | `/api/scheduled-tasks` | 创建定时任务 |
+| POST | `/api/scheduled-tasks/:id/run` | 立即执行任务 |
+| POST | `/api/scheduled-tasks/:id/pause` | 暂停任务 |
+| POST | `/api/scheduled-tasks/:id/resume` | 恢复任务 |
+| GET | `/api/template-market` | 模板市场列表 |
+| POST | `/api/template-market/:id/rate` | 评分模板 |
+| POST | `/api/template-market/:id/favorite` | 收藏模板 |
+| GET | `/api/datasources` | 数据源列表 |
+| POST | `/api/datasources` | 创建数据源 |
+| POST | `/api/datasources/test` | 测试数据源连接 |
+| POST | `/api/relation/generate` | 生成关联数据 |
+| GET | `/api/notifications` | 通知列表 |
+| GET | `/api/notifications/unread-count` | 未读通知数量 |
+| POST | `/api/notifications/:id/read` | 标记通知已读 |
+| POST | `/api/notifications/read-all` | 标记所有已读 |
+| GET | `/api/webhooks` | Webhook 列表 |
+| POST | `/api/webhooks` | 创建 Webhook |
+| POST | `/api/webhooks/:id/test` | 测试 Webhook |
+| GET | `/api/masking/strategies` | 脱敏策略列表 |
+| POST | `/api/masking/mask` | 数据脱敏 |
+| GET | `/api/validation/rule-types` | 验证规则类型 |
+| POST | `/api/validation/validate` | 数据验证 |
+| GET | `/api/import/formats` | 导入格式列表 |
+| POST | `/api/import` | 批量导入 |
+| GET | `/api/audit/logs` | 审计日志列表 |
+| GET | `/api/audit/my-activity` | 用户活动摘要 |
+| GET | `/api/settings` | 系统设置列表 |
+| GET | `/api/settings/public` | 公开设置 |
+| PUT | `/api/settings/:key` | 更新设置 |
 
 ### 待实现 ❌
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/auth/login` | 用户登录 |
-| POST | `/api/auth/register` | 用户注册 |
-| GET | `/api/stats` | 仪表盘统计 |
-| GET | `/api/history` | 历史记录列表 |
-| GET | `/api/api-keys` | API 密钥列表 |
-| POST | `/api/api-keys` | 创建 API 密钥 |
-| GET | `/api/datasources` | 数据源列表 |
-| POST | `/api/datasources/test` | 测试数据源连接 |
-| POST | `/api/relation/generate` | 生成关联数据 |
-| GET | `/api/scheduled-tasks` | 定时任务列表 |
 
 ---
 
@@ -270,12 +302,12 @@ npm run dev
 | 指标 | 数量 |
 |------|------|
 | 总任务数 | 45 |
-| 已完成 | 0 (待开发任务) |
-| P0 任务 | 9 |
-| P1 任务 | 9 |
-| P2 任务 | 8 |
-| P3 任务 | 10 |
-| P4 任务 | 9 |
+| 已完成 | 45 |
+| P0 任务 | 9/9 ✅ |
+| P1 任务 | 9/9 ✅ |
+| P2 任务 | 8/8 ✅ |
+| P3 任务 | 10/10 ✅ |
+| P4 任务 | 9/9 ✅ |
 | 预计总工时 | ~80h |
 
 ---

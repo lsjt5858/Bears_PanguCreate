@@ -91,7 +91,14 @@ export function HistoryPage({ onReuse }: HistoryPageProps) {
     }
 
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
+        // 后端返回的是 UTC 时间（ISO 格式），需要正确解析
+        // 如果没有时区信息，添加 Z 表示 UTC
+        let isoString = dateString
+        if (!dateString.endsWith('Z') && !dateString.includes('+')) {
+            isoString = dateString + 'Z'
+        }
+        
+        const date = new Date(isoString)
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))

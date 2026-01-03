@@ -67,7 +67,7 @@
 | 历史记录 | `pages/HistoryPage.tsx` | ✅ | ❌ 模拟数据 |
 | 模板市场 | `pages/TemplateMarketPage.tsx` | ✅ | ✅ 真实数据 |
 | 数据源管理 | `pages/DataSourcePage.tsx` | ✅ | ❌ 模拟数据 |
-| API 管理 | `pages/ApiPage.tsx` | ✅ | ❌ 模拟数据 |
+| API 管理 | `pages/ApiPage.tsx` | ✅ | ✅ 真实数据 (密钥) |
 | 关联数据 | `pages/RelationPage.tsx` | ✅ | ❌ 模拟数据 |
 
 ---
@@ -134,7 +134,7 @@
 |------|------|------|
 | API 密钥服务 | `services/api_key_service.py` | ❌ 待开发 |
 | API 密钥路由 | `routes/api_key_routes.py` | ❌ 待开发 |
-| 前端对接 | `pages/ApiPage.tsx` (更新) | ❌ 待开发 |
+| 前端对接 | `pages/ApiPage.tsx` (更新) | ✅ 已完成 |
 
 ### 3.6 数据源连接后端（优先级：低）
 ```
@@ -187,7 +187,7 @@
 7. ✅ 模板市场后端 (评分、下载统计)
 
 ### Sprint 3: 高级功能 (3-4 天)
-8. ❌ API 密钥管理后端
+8. ✅ API 密钥管理后端
 9. ❌ 关联数据生成后端
 10. ❌ 数据源连接后端
 

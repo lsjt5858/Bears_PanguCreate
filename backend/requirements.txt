@@ -1,7 +1,16 @@
 flask>=3.0.0
 flask-cors>=4.0.0
 flask-sqlalchemy>=3.1.0
+flasgger>=0.9.7
 sqlalchemy>=2.0.0
 python-dotenv>=1.0.0
 werkzeug>=3.0.0
 pyjwt>=2.8.0
+apscheduler>=3.10.0
+croniter>=2.0.0
+requests>=2.31.0
+
+# 数据库驱动 (可选，按需安装)
+pymysql>=1.1.0
+psycopg2-binary>=2.9.0
+pymongo>=4.6.0

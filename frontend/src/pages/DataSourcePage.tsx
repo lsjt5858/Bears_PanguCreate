@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     Database,
     Plus,
@@ -13,53 +13,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, Button, Input, Modal, ModalFooter, Select, Badge } from '@/components/common'
 import type { DataSource, DataSourceType } from '@/lib/types'
-
-// 模拟数据源
-const mockDataSources: DataSource[] = [
-    {
-        id: '1',
-        name: '测试MySQL数据库',
-        type: 'mysql',
-        host: '192.168.1.100',
-        port: 3306,
-        database: 'test_db',
-        username: 'test_user',
-        status: 'connected',
-        lastConnected: '2024-07-15T10:30:00.000Z',
-        createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-        id: '2',
-        name: '生产PostgreSQL',
-        type: 'postgresql',
-        host: '10.0.0.50',
-        port: 5432,
-        database: 'prod_db',
-        username: 'admin',
-        status: 'disconnected',
-        createdAt: '2024-02-01T00:00:00.000Z',
-    },
-    {
-        id: '3',
-        name: 'MongoDB集群',
-        type: 'mongodb',
-        host: 'mongo.example.com',
-        port: 27017,
-        database: 'analytics',
-        status: 'connected',
-        lastConnected: '2024-07-15T09:00:00.000Z',
-        createdAt: '2024-03-01T00:00:00.000Z',
-    },
-    {
-        id: '4',
-        name: '外部API服务',
-        type: 'restapi',
-        host: 'api.example.com',
-        port: 443,
-        status: 'error',
-        createdAt: '2024-04-01T00:00:00.000Z',
-    },
-]
+import { fetchDataSources, createDataSource, updateDataSource, deleteDataSource, testDataSourceConnection, testConnectionParams } from '@/lib/api'
 
 const dataSourceTypes: { value: DataSourceType; label: string; icon: React.ReactNode }[] = [
     { value: 'mysql', label: 'MySQL', icon: <Database className="h-4 w-4" /> },
@@ -75,18 +29,41 @@ const statusConfig = {
 }
 
 export function DataSourcePage() {
-    const [dataSources, _setDataSources] = useState<DataSource[]>(mockDataSources)
+    const [dataSources, setDataSources] = useState<DataSource[]>([])
+    const [loading, setLoading] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingSource, setEditingSource] = useState<DataSource | null>(null)
+    const [isSaving, setIsSaving] = useState(false)
+    const [isTesting, setIsTesting] = useState(false)
+
+    // 表单状态
     const [formData, setFormData] = useState({
         name: '',
         type: 'mysql' as DataSourceType,
         host: '',
-        port: '',
+        port: '3306',
         database: '',
         username: '',
         password: '',
+        description: '',
     })
+
+    // 加载数据源
+    const loadDataSources = async () => {
+        try {
+            setLoading(true)
+            const list = await fetchDataSources()
+            setDataSources(list)
+        } catch (err) {
+            console.error('Failed to load data sources:', err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        loadDataSources()
+    }, [])
 
     const handleOpenModal = (source?: DataSource) => {
         if (source) {
@@ -98,7 +75,8 @@ export function DataSourcePage() {
                 port: source.port.toString(),
                 database: source.database || '',
                 username: source.username || '',
-                password: '',
+                password: '', // 编辑时不回显密码
+                description: source.description || '',
             })
         } else {
             setEditingSource(null)
@@ -110,19 +88,84 @@ export function DataSourcePage() {
                 database: '',
                 username: '',
                 password: '',
+                description: '',
             })
         }
         setIsModalOpen(true)
     }
 
-    const handleSave = () => {
-        // 保存逻辑
-        setIsModalOpen(false)
+    const handleSave = async () => {
+        if (!formData.name || !formData.host || !formData.port) {
+            alert('请填写必要信息')
+            return
+        }
+
+        try {
+            setIsSaving(true)
+            const payload = {
+                ...formData,
+                port: parseInt(formData.port),
+            }
+
+            if (editingSource) {
+                await updateDataSource(editingSource.id, payload)
+            } else {
+                await createDataSource(payload)
+            }
+
+            setIsModalOpen(false)
+            loadDataSources()
+        } catch (err: any) {
+            alert(err.message || '保存失败')
+        } finally {
+            setIsSaving(false)
+        }
     }
 
-    const handleTestConnection = () => {
-        // 测试连接逻辑
-        alert('测试连接...')
+    // Modal 内测试连接
+    const handleTestParams = async () => {
+        if (!formData.host || !formData.port) {
+            alert('需填写主机和端口')
+            return
+        }
+        try {
+            setIsTesting(true)
+            const res = await testConnectionParams({
+                ...formData,
+                port: parseInt(formData.port)
+            })
+            alert(res.success ? '连接成功！' : `连接失败: ${res.message}`)
+        } catch (err: any) {
+            alert(err.message || '测试连接出错')
+        } finally {
+            setIsTesting(false)
+        }
+    }
+
+    // 列表卡片上的刷新连接
+    const handleRefreshConnection = async (id: string) => {
+        try {
+            const res = await testDataSourceConnection(id)
+            if (res.success) {
+                // 如果成功，重新加载列表以更新状态
+                loadDataSources()
+                // alert('连接正常')
+            } else {
+                alert(`连接失败: ${res.message}`)
+            }
+        } catch (err: any) {
+            alert(err.message || '连接测试出错')
+        }
+    }
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`确定要删除数据源 "${name}" 吗？`)) return
+        try {
+            await deleteDataSource(id)
+            setDataSources(prev => prev.filter(ds => ds.id !== id))
+        } catch (err: any) {
+            alert(err.message || '删除失败')
+        }
     }
 
     return (
@@ -141,7 +184,8 @@ export function DataSourcePage() {
             {/* 数据源列表 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {dataSources.map((source) => {
-                    const status = statusConfig[source.status]
+                    // 默认状态处理
+                    const status = statusConfig[source.status] || statusConfig.disconnected
                     const StatusIcon = status.icon
                     const typeInfo = dataSourceTypes.find(t => t.value === source.type)
 
@@ -173,6 +217,7 @@ export function DataSourcePage() {
                                             variant="ghost"
                                             size="icon"
                                             title="刷新连接"
+                                            onClick={() => handleRefreshConnection(source.id)}
                                         >
                                             <RefreshCw className="h-4 w-4" />
                                         </Button>
@@ -189,6 +234,7 @@ export function DataSourcePage() {
                                             size="icon"
                                             className="text-muted-foreground hover:text-destructive"
                                             title="删除"
+                                            onClick={() => handleDelete(source.id, source.name)}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
@@ -203,6 +249,12 @@ export function DataSourcePage() {
                         </Card>
                     )
                 })}
+                {!loading && dataSources.length === 0 && (
+                    <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground">
+                        <Database className="h-12 w-12 mb-4 opacity-50" />
+                        <p>暂无数据源，请点击右上角添加。</p>
+                    </div>
+                )}
             </div>
 
             {/* 添加/编辑数据源弹窗 */}
@@ -262,22 +314,29 @@ export function DataSourcePage() {
                                     type="password"
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    placeholder="••••••••"
+                                    placeholder={editingSource ? "若不修改请留空" : "••••••••"}
                                 />
                             </div>
                         </>
                     )}
+
+                    <Input
+                        label="描述 (可选)"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="备注信息"
+                    />
                 </div>
 
                 <ModalFooter>
-                    <Button variant="outline" onClick={handleTestConnection}>
-                        测试连接
+                    <Button variant="outline" onClick={handleTestParams} disabled={isTesting}>
+                        {isTesting ? '测试中...' : '测试连接'}
                     </Button>
                     <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
                         取消
                     </Button>
-                    <Button variant="primary" onClick={handleSave}>
-                        保存
+                    <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? '保存中...' : '保存'}
                     </Button>
                 </ModalFooter>
             </Modal>

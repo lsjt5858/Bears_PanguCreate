@@ -22,7 +22,13 @@ def init_extensions(app):
     from models import User, Project, GenerationHistory
     from models.template import Template as TemplateModel, Tag, TemplateRating, TemplateFavorite, TemplateDownload
     from models.api_key import ApiKey, ApiKeyUsageLog
+    from models.scheduled_task import ScheduledTask, TaskExecutionLog
     
     # 在应用上下文中创建所有表
     with app.app_context():
         db.create_all()
+    
+    # 初始化调度器（开发环境也启用）
+    if not app.config.get('TESTING'):
+        from services.scheduler_service import scheduler_service
+        scheduler_service.init_scheduler(app)
