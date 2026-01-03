@@ -10,6 +10,7 @@ from .history_routes import history_bp
 from .stats_routes import stats_bp
 from .template_market_routes import template_market_bp
 from .api_key_routes import api_key_bp
+from .scheduler_routes import scheduler_bp
 
 __all__ = [
     "types_bp",
@@ -21,4 +22,5 @@ __all__ = [
     "stats_bp",
     "template_market_bp",
     "api_key_bp",
+    "scheduler_bp",
 ]
