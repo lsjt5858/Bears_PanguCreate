@@ -168,8 +168,10 @@ class MaskingService:
         if rule_name not in self.PRESET_RULES:
             return value
         
-        rule = self.PRESET_RULES[rule_name]
-        return self.mask_value(value, rule['strategy'], **rule)
+        rule = self.PRESET_RULES[rule_name].copy()
+        strategy = rule.pop('strategy')
+        rule.pop('description', None)  # 移除 description 字段
+        return self.mask_value(value, strategy, **rule)
     
     def mask_record(self, record: dict, rules: Dict[str, dict]) -> dict:
         """对单条记录进行脱敏

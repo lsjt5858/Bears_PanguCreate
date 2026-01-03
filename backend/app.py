@@ -15,7 +15,7 @@ from datetime import datetime
 
 from config import get_config
 from extensions import init_extensions, db
-from routes import types_bp, generate_bp, templates_bp, export_bp, auth_bp, history_bp, stats_bp, template_market_bp, api_key_bp, scheduler_bp, datasource_bp, relation_bp, notification_bp, webhook_bp, masking_bp, validation_bp
+from routes import types_bp, generate_bp, templates_bp, export_bp, auth_bp, history_bp, stats_bp, template_market_bp, api_key_bp, scheduler_bp, datasource_bp, relation_bp, notification_bp, webhook_bp, masking_bp, validation_bp, import_bp, audit_bp, settings_bp
 
 # Swagger 配置
 SWAGGER_CONFIG = {
@@ -66,6 +66,9 @@ SWAGGER_TEMPLATE = {
         {"name": "Webhook", "description": "Webhook 管理相关接口"},
         {"name": "数据脱敏", "description": "数据脱敏相关接口"},
         {"name": "数据验证", "description": "数据验证相关接口"},
+        {"name": "批量导入", "description": "批量导入相关接口"},
+        {"name": "审计日志", "description": "审计日志相关接口"},
+        {"name": "系统设置", "description": "系统设置相关接口"},
         {"name": "导出", "description": "数据导出相关接口"},
         {"name": "系统", "description": "系统状态相关接口"},
     ]
@@ -107,6 +110,9 @@ def create_app(config_class=None):
     app.register_blueprint(webhook_bp)
     app.register_blueprint(masking_bp)
     app.register_blueprint(validation_bp)
+    app.register_blueprint(import_bp)
+    app.register_blueprint(audit_bp)
+    app.register_blueprint(settings_bp)
     
     # 初始化调度器
     from services.scheduler_service import scheduler_service

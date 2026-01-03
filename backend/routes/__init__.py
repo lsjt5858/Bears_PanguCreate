@@ -18,6 +18,9 @@ from .notification_routes import notification_bp
 from .webhook_routes import webhook_bp
 from .masking_routes import masking_bp
 from .validation_routes import validation_bp
+from .import_routes import import_bp
+from .audit_routes import audit_bp
+from .settings_routes import settings_bp
 
 __all__ = [
     "types_bp",
@@ -36,4 +39,7 @@ __all__ = [
     "webhook_bp",
     "masking_bp",
     "validation_bp",
+    "import_bp",
+    "audit_bp",
+    "settings_bp",
 ]

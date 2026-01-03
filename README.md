@@ -103,9 +103,9 @@
 | 40 | Webhook 通知 | 后端 | 3h | ✅ |
 | 41 | 数据脱敏功能 | 后端 | 3h | ✅ |
 | 42 | 数据验证规则 | 后端 | 2h | ✅ |
-| 43 | 批量导入配置 | 全栈 | 3h | ❌ |
-| 44 | 审计日志 | 后端 | 3h | ❌ |
-| 45 | 系统设置页面 | 全栈 | 3h | ❌ |
+| 43 | 批量导入配置 | 全栈 | 3h | ✅ |
+| 44 | 审计日志 | 后端 | 3h | ✅ |
+| 45 | 系统设置页面 | 全栈 | 3h | ✅ |
 
 **P4 小计: ~25h**
 
@@ -282,6 +282,13 @@ npm run dev
 | POST | `/api/masking/mask` | 数据脱敏 |
 | GET | `/api/validation/rule-types` | 验证规则类型 |
 | POST | `/api/validation/validate` | 数据验证 |
+| GET | `/api/import/formats` | 导入格式列表 |
+| POST | `/api/import` | 批量导入 |
+| GET | `/api/audit/logs` | 审计日志列表 |
+| GET | `/api/audit/my-activity` | 用户活动摘要 |
+| GET | `/api/settings` | 系统设置列表 |
+| GET | `/api/settings/public` | 公开设置 |
+| PUT | `/api/settings/:key` | 更新设置 |
 
 ### 待实现 ❌
 
@@ -295,12 +302,12 @@ npm run dev
 | 指标 | 数量 |
 |------|------|
 | 总任务数 | 45 |
-| 已完成 | 42 |
+| 已完成 | 45 |
 | P0 任务 | 9/9 ✅ |
 | P1 任务 | 9/9 ✅ |
 | P2 任务 | 8/8 ✅ |
 | P3 任务 | 10/10 ✅ |
-| P4 任务 | 4/9 |
+| P4 任务 | 9/9 ✅ |
 | 预计总工时 | ~80h |
 
 ---

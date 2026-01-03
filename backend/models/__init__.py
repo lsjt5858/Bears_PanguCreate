@@ -15,6 +15,8 @@ from .template import Template as TemplateModel, Tag, TemplateRating, TemplateFa
 from .datasource import DataSource
 from .notification import Notification
 from .webhook import Webhook
+from .audit_log import AuditLog
+from .system_setting import SystemSetting
 
 
 @dataclass
