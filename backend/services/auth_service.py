@@ -190,39 +190,5 @@ class AuthService:
 auth_service = AuthService()
 
 
-# 装饰器：需要登录
-def login_required(f):
-    """需要登录的装饰器"""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({'error': '未提供认证信息'}), 401
-        
-        parts = auth_header.split()
-        if len(parts) != 2 or parts[0].lower() != 'bearer':
-            return jsonify({'error': '认证格式错误'}), 401
-        
-        token = parts[1]
-        user, error = auth_service.verify_token(token)
-        
-        if error:
-            return jsonify({'error': error}), 401
-        
-        g.current_user = user
-        return f(*args, **kwargs)
-    
-    return decorated
-
-
-# 装饰器：需要管理员权限
-def admin_required(f):
-    """需要管理员权限的装饰器"""
-    @wraps(f)
-    @login_required
-    def decorated(*args, **kwargs):
-        if not g.current_user.is_admin:
-            return jsonify({'error': '需要管理员权限'}), 403
-        return f(*args, **kwargs)
-    
-    return decorated
+# 从 middleware 导入装饰器（保持向后兼容）
+from middleware.auth import login_required, admin_required

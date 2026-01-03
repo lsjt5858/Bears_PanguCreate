@@ -31,7 +31,7 @@
 | 4 | 项目模型 `models/project.py` | 后端 | 1h | ✅ |
 | 5 | JWT 认证服务 `services/auth_service.py` | 后端 | 2h | ✅ |
 | 6 | 登录/注册 API `routes/auth_routes.py` | 后端 | 2h | ✅ |
-| 7 | 权限中间件 `middleware/auth.py` | 后端 | 1h | ❌ |
+| 7 | 权限中间件 `middleware/auth.py` | 后端 | 1h | ✅ |
 | 8 | 前端登录页面 `pages/LoginPage.tsx` | 前端 | 2h | ❌ |
 | 9 | Auth Context `context/AuthContext.tsx` | 前端 | 1h | ❌ |
 
