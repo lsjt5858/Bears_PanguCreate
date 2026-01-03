@@ -10,7 +10,41 @@ export_bp = Blueprint('export', __name__, url_prefix='/api')
 
 @export_bp.route('/export/json', methods=['POST'])
 def export_json():
-    """导出为JSON格式"""
+    """
+    导出为JSON格式
+    ---
+    tags:
+      - 导出
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - data
+          properties:
+            data:
+              type: array
+              description: 要导出的数据
+              items:
+                type: object
+            fields:
+              type: array
+              description: 字段配置
+              items:
+                type: object
+    responses:
+      200:
+        description: 返回JSON文件
+        content:
+          application/json:
+            schema:
+              type: string
+              format: binary
+      400:
+        description: 无数据可导出
+    """
     data = request.get_json()
     records = data.get("data", [])
     fields = data.get("fields", [])
@@ -31,7 +65,37 @@ def export_json():
 
 @export_bp.route('/export/csv', methods=['POST'])
 def export_csv():
-    """导出为CSV格式"""
+    """
+    导出为CSV格式
+    ---
+    tags:
+      - 导出
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - data
+          properties:
+            data:
+              type: array
+              description: 要导出的数据
+            fields:
+              type: array
+              description: 字段配置
+    responses:
+      200:
+        description: 返回CSV文件
+        content:
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      400:
+        description: 无数据可导出
+    """
     data = request.get_json()
     records = data.get("data", [])
     fields = data.get("fields", [])
@@ -53,7 +117,41 @@ def export_csv():
 
 @export_bp.route('/export/sql', methods=['POST'])
 def export_sql():
-    """导出为SQL格式"""
+    """
+    导出为SQL格式
+    ---
+    tags:
+      - 导出
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - data
+          properties:
+            data:
+              type: array
+              description: 要导出的数据
+            fields:
+              type: array
+              description: 字段配置
+            tableName:
+              type: string
+              description: 表名
+              default: test_data
+    responses:
+      200:
+        description: 返回SQL文件
+        content:
+          text/plain:
+            schema:
+              type: string
+              format: binary
+      400:
+        description: 无数据可导出
+    """
     data = request.get_json()
     records = data.get("data", [])
     fields = data.get("fields", [])

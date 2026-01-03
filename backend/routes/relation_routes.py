@@ -14,13 +14,74 @@ relation_bp = Blueprint('relation', __name__, url_prefix='/api/relation')
 @relation_bp.route('/generate', methods=['POST'])
 @login_required
 def generate_relation_data():
-    """
-    生成关联数据
-    Request Body:
-    {
-        "tables": [{"name": "t1", "count": 10, "fields": [...]}, ...],
-        "relations": [{"sourceTable": "t1", ...}, ...]
-    }
+    """生成关联数据
+    ---
+    tags:
+      - 关联数据生成
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - tables
+          properties:
+            tables:
+              type: array
+              description: 表定义列表
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: 表名
+                  count:
+                    type: integer
+                    description: 生成数量
+                  fields:
+                    type: array
+                    description: 字段定义
+                    items:
+                      type: object
+            relations:
+              type: array
+              description: 关联关系定义
+              items:
+                type: object
+                properties:
+                  sourceTable:
+                    type: string
+                    description: 源表名
+                  sourceField:
+                    type: string
+                    description: 源字段
+                  targetTable:
+                    type: string
+                    description: 目标表名
+                  targetField:
+                    type: string
+                    description: 目标字段
+                  type:
+                    type: string
+                    description: 关联类型 (one-to-one/one-to-many/many-to-many)
+    responses:
+      200:
+        description: 生成成功
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              type: object
+              description: 生成的关联数据
+      400:
+        description: 请求参数错误
+      500:
+        description: 生成失败
     """
     data = request.get_json()
     if not data:

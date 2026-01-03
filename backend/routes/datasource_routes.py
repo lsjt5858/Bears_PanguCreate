@@ -16,7 +16,62 @@ datasource_bp = Blueprint('datasource', __name__, url_prefix='/api/datasources')
 @datasource_bp.route('', methods=['GET'])
 @login_required
 def list_datasources():
-    """获取数据源列表"""
+    """获取数据源列表
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: project_id
+        in: query
+        type: integer
+        required: false
+        description: 项目ID
+      - name: type
+        in: query
+        type: string
+        required: false
+        description: 数据源类型 (mysql/postgresql/mongodb)
+      - name: status
+        in: query
+        type: string
+        required: false
+        description: 状态
+      - name: page
+        in: query
+        type: integer
+        required: false
+        default: 1
+        description: 页码
+      - name: page_size
+        in: query
+        type: integer
+        required: false
+        default: 20
+        description: 每页数量
+    responses:
+      200:
+        description: 数据源列表
+        schema:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+            pagination:
+              type: object
+              properties:
+                page:
+                  type: integer
+                page_size:
+                  type: integer
+                total:
+                  type: integer
+                total_pages:
+                  type: integer
+    """
     user_id = g.current_user.id
     
     # 获取查询参数
@@ -49,7 +104,73 @@ def list_datasources():
 @datasource_bp.route('', methods=['POST'])
 @login_required
 def create_datasource():
-    """创建数据源"""
+    """创建数据源
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+            - type
+            - host
+            - port
+          properties:
+            name:
+              type: string
+              description: 数据源名称
+            type:
+              type: string
+              description: 数据源类型 (mysql/postgresql/mongodb)
+            host:
+              type: string
+              description: 主机地址
+            port:
+              type: integer
+              description: 端口号
+            database:
+              type: string
+              description: 数据库名
+            username:
+              type: string
+              description: 用户名
+            password:
+              type: string
+              description: 密码
+            description:
+              type: string
+              description: 描述
+            project_id:
+              type: integer
+              description: 项目ID
+            use_ssl:
+              type: boolean
+              description: 是否使用SSL
+            ssl_config:
+              type: object
+              description: SSL配置
+            api_config:
+              type: object
+              description: API配置
+    responses:
+      201:
+        description: 创建成功
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            data:
+              type: object
+      400:
+        description: 请求参数错误
+    """
     user_id = g.current_user.id
     data = request.get_json()
     
@@ -90,7 +211,29 @@ def create_datasource():
 @datasource_bp.route('/<datasource_id>', methods=['GET'])
 @login_required
 def get_datasource(datasource_id):
-    """获取数据源详情"""
+    """获取数据源详情
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: datasource_id
+        in: path
+        type: string
+        required: true
+        description: 数据源ID
+    responses:
+      200:
+        description: 数据源详情
+        schema:
+          type: object
+          properties:
+            data:
+              type: object
+      404:
+        description: 数据源不存在
+    """
     user_id = g.current_user.id
     
     datasource = datasource_service.get_datasource(datasource_id, user_id)
@@ -105,7 +248,61 @@ def get_datasource(datasource_id):
 @datasource_bp.route('/<datasource_id>', methods=['PUT'])
 @login_required
 def update_datasource(datasource_id):
-    """更新数据源"""
+    """更新数据源
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: datasource_id
+        in: path
+        type: string
+        required: true
+        description: 数据源ID
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: 数据源名称
+            host:
+              type: string
+              description: 主机地址
+            port:
+              type: integer
+              description: 端口号
+            database:
+              type: string
+              description: 数据库名
+            username:
+              type: string
+              description: 用户名
+            password:
+              type: string
+              description: 密码
+            description:
+              type: string
+              description: 描述
+            use_ssl:
+              type: boolean
+              description: 是否使用SSL
+    responses:
+      200:
+        description: 更新成功
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            data:
+              type: object
+      400:
+        description: 请求参数错误
+    """
     user_id = g.current_user.id
     data = request.get_json()
     
@@ -130,7 +327,29 @@ def update_datasource(datasource_id):
 @datasource_bp.route('/<datasource_id>', methods=['DELETE'])
 @login_required
 def delete_datasource(datasource_id):
-    """删除数据源"""
+    """删除数据源
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: datasource_id
+        in: path
+        type: string
+        required: true
+        description: 数据源ID
+    responses:
+      200:
+        description: 删除成功
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+      400:
+        description: 删除失败
+    """
     user_id = g.current_user.id
     
     success, error = datasource_service.delete_datasource(datasource_id, user_id)
@@ -146,7 +365,31 @@ def delete_datasource(datasource_id):
 @datasource_bp.route('/<datasource_id>/test', methods=['POST'])
 @login_required
 def test_datasource_connection(datasource_id):
-    """测试数据源连接"""
+    """测试数据源连接
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: datasource_id
+        in: path
+        type: string
+        required: true
+        description: 数据源ID
+    responses:
+      200:
+        description: 测试结果
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+            info:
+              type: object
+    """
     user_id = g.current_user.id
     
     success, message, info = datasource_service.test_connection(datasource_id, user_id)
@@ -161,7 +404,62 @@ def test_datasource_connection(datasource_id):
 @datasource_bp.route('/test', methods=['POST'])
 @login_required
 def test_connection_params():
-    """测试连接参数（不保存）"""
+    """测试连接参数（不保存）
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - type
+            - host
+            - port
+          properties:
+            type:
+              type: string
+              description: 数据源类型 (mysql/postgresql/mongodb)
+            host:
+              type: string
+              description: 主机地址
+            port:
+              type: integer
+              description: 端口号
+            database:
+              type: string
+              description: 数据库名
+            username:
+              type: string
+              description: 用户名
+            password:
+              type: string
+              description: 密码
+            use_ssl:
+              type: boolean
+              description: 是否使用SSL
+            api_config:
+              type: object
+              description: API配置
+    responses:
+      200:
+        description: 测试结果
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+            info:
+              type: object
+      400:
+        description: 请求参数错误
+    """
     data = request.get_json()
     
     if not data:
@@ -194,7 +492,31 @@ def test_connection_params():
 @datasource_bp.route('/<datasource_id>/tables', methods=['GET'])
 @login_required
 def get_datasource_tables(datasource_id):
-    """获取数据源的表/集合列表"""
+    """获取数据源的表/集合列表
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: datasource_id
+        in: path
+        type: string
+        required: true
+        description: 数据源ID
+    responses:
+      200:
+        description: 表列表
+        schema:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+      400:
+        description: 获取失败
+    """
     user_id = g.current_user.id
     
     tables, error = datasource_service.get_tables(datasource_id, user_id)
@@ -210,7 +532,36 @@ def get_datasource_tables(datasource_id):
 @datasource_bp.route('/<datasource_id>/tables/<table_name>', methods=['GET'])
 @login_required
 def get_table_schema(datasource_id, table_name):
-    """获取表结构"""
+    """获取表结构
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: datasource_id
+        in: path
+        type: string
+        required: true
+        description: 数据源ID
+      - name: table_name
+        in: path
+        type: string
+        required: true
+        description: 表名
+    responses:
+      200:
+        description: 表结构
+        schema:
+          type: object
+          properties:
+            data:
+              type: object
+      404:
+        description: 数据源不存在
+      500:
+        description: 服务器错误
+    """
     user_id = g.current_user.id
     
     from models.datasource import DataSource
@@ -268,7 +619,60 @@ def get_table_schema(datasource_id, table_name):
 @datasource_bp.route('/<datasource_id>/write', methods=['POST'])
 @login_required
 def write_to_datasource(datasource_id):
-    """向数据源写入数据"""
+    """向数据源写入数据
+    ---
+    tags:
+      - 数据源管理
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: datasource_id
+        in: path
+        type: string
+        required: true
+        description: 数据源ID
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - table_name
+            - data
+          properties:
+            table_name:
+              type: string
+              description: 表名
+            data:
+              type: array
+              items:
+                type: object
+              description: 要写入的数据
+            create_table:
+              type: boolean
+              description: 是否创建表
+            columns:
+              type: array
+              items:
+                type: object
+              description: 列定义
+    responses:
+      200:
+        description: 写入成功
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            inserted:
+              type: integer
+      400:
+        description: 请求参数错误
+      404:
+        description: 数据源不存在
+      500:
+        description: 写入失败
+    """
     user_id = g.current_user.id
     data = request.get_json()
     
