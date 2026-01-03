@@ -99,10 +99,10 @@
 |---|------|------|----------|------|
 | 37 | 个人资料弹窗 `modals/UserProfileModal.tsx` | 前端 | 2h | ✅ |
 | 38 | 项目设置弹窗 `modals/ProjectSettingsModal.tsx` | 前端 | 2h | ✅ |
-| 39 | 通知系统 | 全栈 | 4h | ❌ |
-| 40 | Webhook 通知 | 后端 | 3h | ❌ |
-| 41 | 数据脱敏功能 | 后端 | 3h | ❌ |
-| 42 | 数据验证规则 | 后端 | 2h | ❌ |
+| 39 | 通知系统 | 全栈 | 4h | ✅ |
+| 40 | Webhook 通知 | 后端 | 3h | ✅ |
+| 41 | 数据脱敏功能 | 后端 | 3h | ✅ |
+| 42 | 数据验证规则 | 后端 | 2h | ✅ |
 | 43 | 批量导入配置 | 全栈 | 3h | ❌ |
 | 44 | 审计日志 | 后端 | 3h | ❌ |
 | 45 | 系统设置页面 | 全栈 | 3h | ❌ |
@@ -271,6 +271,17 @@ npm run dev
 | POST | `/api/datasources` | 创建数据源 |
 | POST | `/api/datasources/test` | 测试数据源连接 |
 | POST | `/api/relation/generate` | 生成关联数据 |
+| GET | `/api/notifications` | 通知列表 |
+| GET | `/api/notifications/unread-count` | 未读通知数量 |
+| POST | `/api/notifications/:id/read` | 标记通知已读 |
+| POST | `/api/notifications/read-all` | 标记所有已读 |
+| GET | `/api/webhooks` | Webhook 列表 |
+| POST | `/api/webhooks` | 创建 Webhook |
+| POST | `/api/webhooks/:id/test` | 测试 Webhook |
+| GET | `/api/masking/strategies` | 脱敏策略列表 |
+| POST | `/api/masking/mask` | 数据脱敏 |
+| GET | `/api/validation/rule-types` | 验证规则类型 |
+| POST | `/api/validation/validate` | 数据验证 |
 
 ### 待实现 ❌
 
@@ -284,12 +295,12 @@ npm run dev
 | 指标 | 数量 |
 |------|------|
 | 总任务数 | 45 |
-| 已完成 | 32 |
+| 已完成 | 42 |
 | P0 任务 | 9/9 ✅ |
 | P1 任务 | 9/9 ✅ |
 | P2 任务 | 8/8 ✅ |
 | P3 任务 | 10/10 ✅ |
-| P4 任务 | 0/9 |
+| P4 任务 | 4/9 |
 | 预计总工时 | ~80h |
 
 ---

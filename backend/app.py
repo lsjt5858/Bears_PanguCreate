@@ -15,7 +15,7 @@ from datetime import datetime
 
 from config import get_config
 from extensions import init_extensions, db
-from routes import types_bp, generate_bp, templates_bp, export_bp, auth_bp, history_bp, stats_bp, template_market_bp, api_key_bp, scheduler_bp, datasource_bp, relation_bp
+from routes import types_bp, generate_bp, templates_bp, export_bp, auth_bp, history_bp, stats_bp, template_market_bp, api_key_bp, scheduler_bp, datasource_bp, relation_bp, notification_bp, webhook_bp, masking_bp, validation_bp
 
 # Swagger 配置
 SWAGGER_CONFIG = {
@@ -60,8 +60,12 @@ SWAGGER_TEMPLATE = {
         {"name": "统计", "description": "仪表盘统计相关接口"},
         {"name": "API密钥", "description": "API密钥管理相关接口"},
         {"name": "定时任务", "description": "定时任务调度相关接口"},
-        {"name": "数据源", "description": "数据源管理相关接口"},
-        {"name": "关联数据", "description": "关联数据生成相关接口"},
+        {"name": "数据源管理", "description": "数据源管理相关接口"},
+        {"name": "关联数据生成", "description": "关联数据生成相关接口"},
+        {"name": "通知系统", "description": "通知管理相关接口"},
+        {"name": "Webhook", "description": "Webhook 管理相关接口"},
+        {"name": "数据脱敏", "description": "数据脱敏相关接口"},
+        {"name": "数据验证", "description": "数据验证相关接口"},
         {"name": "导出", "description": "数据导出相关接口"},
         {"name": "系统", "description": "系统状态相关接口"},
     ]
@@ -99,6 +103,10 @@ def create_app(config_class=None):
     app.register_blueprint(scheduler_bp)
     app.register_blueprint(datasource_bp)
     app.register_blueprint(relation_bp)
+    app.register_blueprint(notification_bp)
+    app.register_blueprint(webhook_bp)
+    app.register_blueprint(masking_bp)
+    app.register_blueprint(validation_bp)
     
     # 初始化调度器
     from services.scheduler_service import scheduler_service
