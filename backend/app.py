@@ -118,6 +118,15 @@ def create_app(config_class=None):
     from services.scheduler_service import scheduler_service
     scheduler_service.init_scheduler(app)
     
+    # 初始化默认模板（首次运行时）
+    with app.app_context():
+        from services.template_market_service import template_market_service
+        from models import User
+        # 获取管理员用户，如果没有则使用 ID 1
+        admin = User.query.filter_by(is_admin=True).first()
+        admin_id = admin.id if admin else 1
+        template_market_service.init_default_templates(admin_id)
+    
     # 健康检查端点
     @app.route("/api/health", methods=["GET"])
     def health():

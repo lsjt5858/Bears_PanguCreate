@@ -11,21 +11,15 @@ import {
     AlertCircle
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common'
-import type { DashboardStats, TrendData, ActivityLog } from '@/lib/types'
+import type { DashboardStats, TrendData, ActivityLog, MarketTemplate } from '@/lib/types'
 import { useEffect, useState } from 'react'
-import { fetchDashboardStats, fetchTrendData, fetchRecentActivities } from '@/lib/api'
-
-const popularTemplates = [
-    { name: '用户注册数据', downloads: 1234, rating: 4.8 },
-    { name: '电商订单数据', downloads: 987, rating: 4.6 },
-    { name: '财务流水数据', downloads: 756, rating: 4.5 },
-    { name: '商品信息数据', downloads: 543, rating: 4.3 },
-]
+import { fetchDashboardStats, fetchTrendData, fetchRecentActivities, fetchMarketTemplates } from '@/lib/api'
 
 export function DashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [trendData, setTrendData] = useState<TrendData[]>([])
     const [activities, setActivities] = useState<ActivityLog[]>([])
+    const [popularTemplates, setPopularTemplates] = useState<MarketTemplate[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -33,14 +27,16 @@ export function DashboardPage() {
         const loadData = async () => {
             try {
                 setLoading(true)
-                const [statsData, trend, activitiesData] = await Promise.all([
+                const [statsData, trend, activitiesData, templatesData] = await Promise.all([
                     fetchDashboardStats(),
                     fetchTrendData(),
-                    fetchRecentActivities()
+                    fetchRecentActivities(),
+                    fetchMarketTemplates({ sort_by: 'downloads', page_size: 4 })
                 ])
                 setStats(statsData)
                 setTrendData(trend)
                 setActivities(activitiesData)
+                setPopularTemplates(templatesData)
                 setError(null)
             } catch (err) {
                 console.error(err)
@@ -172,7 +168,7 @@ export function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* 热门模板 (暂保留Mock数据，因为API尚不支持) */}
+                {/* 热门模板 */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -181,20 +177,26 @@ export function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        {popularTemplates.map((template, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
-                                        {index + 1}
-                                    </span>
-                                    <span className="text-sm text-foreground">{template.name}</span>
+                        {popularTemplates.length > 0 ? (
+                            popularTemplates.map((template, index) => (
+                                <div key={template.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
+                                            {index + 1}
+                                        </span>
+                                        <span className="text-sm text-foreground">{template.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                        {template.rating?.toFixed(1) || '0.0'}
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                                    {template.rating}
-                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-4 text-muted-foreground text-sm">
+                                暂无模板数据
                             </div>
-                        ))}
+                        )}
                     </CardContent>
                 </Card>
             </div>
