@@ -433,3 +433,42 @@ def get_market_stats():
     """
     stats = template_market_service.get_market_stats()
     return jsonify({'data': stats})
+
+
+@template_market_bp.route('/init-defaults', methods=['POST'])
+def init_default_templates():
+    """
+    初始化默认模板（仅在模板为空时执行）
+    ---
+    tags:
+      - 模板市场
+    responses:
+      200:
+        description: 初始化成功
+    """
+    from models import User
+    from models.template import Template
+    
+    # 检查是否已有模板
+    existing_count = Template.query.count()
+    if existing_count > 0:
+        return jsonify({
+            'message': f'模板市场已有 {existing_count} 个模板，无需初始化',
+            'count': existing_count
+        })
+    
+    # 获取管理员用户
+    admin = User.query.filter_by(is_admin=True).first()
+    if not admin:
+        admin = User.query.first()
+    
+    if not admin:
+        return jsonify({'error': '没有可用的用户来创建默认模板'}), 400
+    
+    template_market_service.init_default_templates(admin.id)
+    
+    new_count = Template.query.count()
+    return jsonify({
+        'message': f'成功初始化 {new_count} 个默认模板',
+        'count': new_count
+    })

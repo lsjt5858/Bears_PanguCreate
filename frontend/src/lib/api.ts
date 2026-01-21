@@ -650,3 +650,120 @@ export async function generateRelationData(tables: RelationTable[], relations: T
   const result = await res.json()
   return result.data
 }
+
+// ==========================================
+// 模板市场 API
+// ==========================================
+
+import type { MarketTemplate } from './types'
+
+export interface MarketTemplateParams {
+  page?: number
+  page_size?: number
+  category?: string
+  search?: string
+  sort_by?: 'downloads' | 'rating' | 'created_at'
+  tags?: string[]
+}
+
+export async function fetchMarketTemplates(params: MarketTemplateParams = {}): Promise<MarketTemplate[]> {
+  const searchParams = new URLSearchParams()
+  if (params.page) searchParams.append('page', params.page.toString())
+  if (params.page_size) searchParams.append('page_size', params.page_size.toString())
+  if (params.category) searchParams.append('category', params.category)
+  if (params.search) searchParams.append('search', params.search)
+  if (params.sort_by) searchParams.append('sort_by', params.sort_by)
+  if (params.tags) params.tags.forEach(tag => searchParams.append('tags', tag))
+
+  const res = await fetch(`${API_BASE}/market/templates?${searchParams.toString()}`, {
+    headers: getAuthHeaders()
+  })
+
+  if (!res.ok) throw new Error('获取模板列表失败')
+
+  const result = await res.json()
+  
+  // 转换后端数据格式为前端类型
+  return result.data.map((t: any) => ({
+    id: t.uuid || t.id,
+    name: t.name,
+    description: t.description || '',
+    category: t.category,
+    fields: t.fields || [],
+    createdAt: t.created_at,
+    updatedAt: t.updated_at,
+    author: t.author ? {
+      id: t.author.id || t.author.uuid,
+      name: t.author.nickname || t.author.username || '系统',
+      email: t.author.email || '',
+      role: 'member' as const,
+      createdAt: t.author.created_at || ''
+    } : {
+      id: 'system',
+      name: '系统',
+      email: '',
+      role: 'admin' as const,
+      createdAt: ''
+    },
+    downloads: t.downloads || 0,
+    rating: t.rating || 0,
+    ratingCount: t.rating_count || 0,
+    isFavorite: t.is_favorite || false,
+    tags: t.tags?.map((tag: any) => typeof tag === 'string' ? tag : tag.name) || [t.category]
+  }))
+}
+
+export async function createMarketTemplate(data: {
+  name: string
+  description?: string
+  category?: string
+  fields: any[]
+  tags?: string[]
+  is_public?: boolean
+}): Promise<MarketTemplate> {
+  const res = await fetch(`${API_BASE}/market/templates`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      name: data.name,
+      description: data.description,
+      category: data.category || 'other',
+      fields: data.fields,
+      tags: data.tags || [],
+      is_public: data.is_public !== false
+    })
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.error || '创建模板失败')
+  }
+
+  const result = await res.json()
+  return result.data
+}
+
+export async function toggleTemplateFavorite(templateId: string): Promise<{ is_favorite: boolean }> {
+  const res = await fetch(`${API_BASE}/market/templates/${templateId}/favorite`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.error || '操作失败')
+  }
+
+  return await res.json()
+}
+
+export async function fetchMarketStats(): Promise<{ total_templates: number; total_downloads: number; new_this_week: number }> {
+  const res = await fetch(`${API_BASE}/market/stats`, {
+    headers: getAuthHeaders()
+  })
+
+  if (!res.ok) throw new Error('获取市场统计失败')
+
+  const result = await res.json()
+  return result.data
+}

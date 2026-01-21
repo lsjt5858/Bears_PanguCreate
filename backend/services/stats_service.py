@@ -65,14 +65,47 @@ class StatsService:
             func.coalesce(func.sum(GenerationHistory.row_count), 0)
         ).filter(*last_month_filter).scalar() or 0
         
-        # 模板数量（从模板服务获取，这里简化处理）
-        # TODO: 集成模板服务
-        total_templates = 0
+        # 模板数量 - 包含系统默认模板(4个) + 模板市场的模板
+        from models.template import Template
+        from services.template_service import template_service
+        
+        # 系统默认模板数量
+        default_templates_count = len(template_service.get_all())
+        
+        # 模板市场的模板数量
+        if user_id:
+            # 用户自己创建的模板 + 公开模板数量
+            user_templates = Template.query.filter_by(author_id=user_id).count()
+            public_templates = Template.query.filter_by(is_public=True).count()
+            market_templates = max(user_templates, public_templates)
+        else:
+            market_templates = Template.query.filter_by(is_public=True).count()
+        
+        # 总模板数 = 默认模板 + 市场模板
+        total_templates = default_templates_count + market_templates
         
         # 团队成员数
         if project_id:
             project = Project.query.get(project_id)
-            total_members = len(project.members) + 1 if project else 1  # +1 for owner
+            total_members = project.members.count() + 1 if project else 1  # +1 for owner
+        elif user_id:
+            # 获取用户所在的所有项目的成员总数（去重）
+            user = User.query.get(user_id)
+            if user:
+                member_ids = set([user_id])  # 包含自己
+                # 用户创建的项目 (user.projects 是 owner 关系)
+                for project in user.projects.all():
+                    member_ids.add(project.owner_id)
+                    for member in project.members.all():
+                        member_ids.add(member.id)
+                # 用户参与的项目 (user.member_projects 是成员关系)
+                for project in user.member_projects.all():
+                    member_ids.add(project.owner_id)
+                    for member in project.members.all():
+                        member_ids.add(member.id)
+                total_members = len(member_ids)
+            else:
+                total_members = 1
         else:
             total_members = User.query.filter_by(is_active=True).count()
         

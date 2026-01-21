@@ -1,40 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Search, Star, Download, Grid, List, Heart, Loader2, AlertCircle } from 'lucide-react'
-import { Card, CardContent, Button, Input, Badge, Tabs, TabsList, TabsTrigger } from '@/components/common'
+import { Search, Star, Download, Grid, List, Heart, Loader2, AlertCircle, Plus, X } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Badge, Tabs, TabsList, TabsTrigger } from '@/components/common'
 import { cn } from '@/lib/utils'
-import type { MarketTemplate, Template } from '@/lib/types'
-import { fetchTemplates } from '@/lib/api'
-
-// 辅助函数：将基础模板转换为市场模板（填充缺失数据）
-const adaptToMarketTemplate = (template: Template): MarketTemplate => {
-    // 确定标签
-    const tags = [template.category]
-    if (template.name.includes('用户')) tags.push('用户')
-    if (template.name.includes('订单')) tags.push('交易')
-    if (template.name.includes('商品')) tags.push('商品')
-
-    // 生成伪随机数据用于演示（因为后端尚不支持这些字段）
-    const seed = template.id.charCodeAt(0) || 0
-    const downloads = 100 + (seed * 50) % 5000
-    const rating = 4.0 + (seed % 10) / 10
-    const ratingCount = 10 + (seed * 2) % 200
-
-    return {
-        ...template,
-        author: {
-            id: 'system',
-            name: '系统默认',
-            email: 'admin@bears.com',
-            role: 'admin',
-            createdAt: new Date().toISOString()
-        },
-        downloads,
-        rating: Number(rating.toFixed(1)),
-        ratingCount,
-        isFavorite: false,
-        tags
-    }
-}
+import type { MarketTemplate, DataField } from '@/lib/types'
+import { fetchMarketTemplates, createMarketTemplate, toggleTemplateFavorite } from '@/lib/api'
 
 const categories = [
     { id: 'all', name: '全部' },
@@ -58,44 +27,53 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState('all')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-    const [favorites, setFavorites] = useState<Set<string>>(new Set())
+    const [showCreateModal, setShowCreateModal] = useState(false)
+
+    const loadTemplates = async () => {
+        try {
+            setLoading(true)
+            const data = await fetchMarketTemplates({
+                category: activeCategory !== 'all' ? activeCategory : undefined,
+                search: searchQuery || undefined
+            })
+            setTemplates(data)
+            setError(null)
+        } catch (err) {
+            console.error('Failed to fetch templates:', err)
+            setError('获取模板列表失败，请稍后重试。')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const loadTemplates = async () => {
-            try {
-                setLoading(true)
-                const data = await fetchTemplates()
-                // 转换后端基础模板为市场模板格式
-                const marketTemplates = data.map(adaptToMarketTemplate)
-                setTemplates(marketTemplates)
-                setError(null)
-            } catch (err) {
-                console.error('Failed to fetch templates:', err)
-                setError('获取模板列表失败，请稍后重试。')
-            } finally {
-                setLoading(false)
-            }
-        }
         loadTemplates()
-    }, [])
+    }, [activeCategory])
+
+    // 搜索防抖
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (!loading) loadTemplates()
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [searchQuery])
 
     const filteredTemplates = templates.filter((template) => {
-        const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const matchesSearch = !searchQuery || 
+            template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             template.description.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesCategory = activeCategory === 'all' || template.category === activeCategory
-        return matchesSearch && matchesCategory
+        return matchesSearch
     })
 
-    const toggleFavorite = (templateId: string) => {
-        setFavorites(prev => {
-            const next = new Set(prev)
-            if (next.has(templateId)) {
-                next.delete(templateId)
-            } else {
-                next.add(templateId)
-            }
-            return next
-        })
+    const toggleFavorite = async (templateId: string) => {
+        try {
+            const result = await toggleTemplateFavorite(templateId)
+            setTemplates(prev => prev.map(t => 
+                t.id === templateId ? { ...t, isFavorite: result.is_favorite } : t
+            ))
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err)
+        }
     }
 
     const formatDownloads = (count: number) => {
@@ -104,7 +82,18 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
         return count.toString()
     }
 
-    if (loading) {
+    const handleCreateTemplate = async (data: { name: string; description: string; category: string; fields: DataField[]; tags: string[] }) => {
+        try {
+            await createMarketTemplate(data)
+            setShowCreateModal(false)
+            loadTemplates()
+        } catch (err) {
+            console.error('Failed to create template:', err)
+            throw err
+        }
+    }
+
+    if (loading && templates.length === 0) {
         return (
             <div className="flex-1 flex items-center justify-center h-full">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -115,7 +104,7 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
         )
     }
 
-    if (error) {
+    if (error && templates.length === 0) {
         return (
             <div className="flex-1 flex items-center justify-center h-full p-6">
                 <Card className="max-w-md w-full border-destructive/50">
@@ -125,10 +114,7 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                             <h3 className="font-bold">加载失败</h3>
                             <p className="text-sm text-muted-foreground">{error}</p>
                         </div>
-                        <Button
-                            variant="primary"
-                            onClick={() => window.location.reload()}
-                        >
+                        <Button variant="primary" onClick={() => loadTemplates()}>
                             重试
                         </Button>
                     </CardContent>
@@ -139,9 +125,15 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
 
     return (
         <div className="flex-1 overflow-auto p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-foreground">模板市场</h1>
-                <p className="text-muted-foreground">发现和使用团队共享的数据模板</p>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-foreground">模板市场</h1>
+                    <p className="text-muted-foreground">发现和使用团队共享的数据模板</p>
+                </div>
+                <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    创建模板
+                </Button>
             </div>
 
             {/* 搜索和筛选 */}
@@ -191,6 +183,9 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
             {filteredTemplates.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                     <p>没有找到匹配的模板</p>
+                    <Button variant="ghost" className="mt-2" onClick={() => setShowCreateModal(true)}>
+                        创建第一个模板
+                    </Button>
                 </div>
             ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -200,7 +195,7 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
                                         <h3 className="text-base font-semibold text-foreground">{template.name}</h3>
-                                        <p className="text-xs text-muted-foreground mt-0.5">by {template.author.name}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">by {template.author?.name || '系统'}</p>
                                     </div>
                                     <button
                                         onClick={() => toggleFavorite(template.id)}
@@ -209,7 +204,7 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                         <Heart
                                             className={cn(
                                                 'h-5 w-5',
-                                                favorites.has(template.id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
+                                                template.isFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
                                             )}
                                         />
                                     </button>
@@ -220,7 +215,7 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                 </p>
 
                                 <div className="flex flex-wrap gap-1 mb-3 h-6 overflow-hidden">
-                                    {template.tags.map((tag) => (
+                                    {template.tags?.map((tag) => (
                                         <Badge key={tag} variant="outline" className="text-xs">
                                             {tag}
                                         </Badge>
@@ -231,11 +226,11 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1">
                                             <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                                            {template.rating}
+                                            {template.rating?.toFixed(1) || '0.0'}
                                         </span>
                                         <span className="flex items-center gap-1">
                                             <Download className="h-4 w-4" />
-                                            {formatDownloads(template.downloads)}
+                                            {formatDownloads(template.downloads || 0)}
                                         </span>
                                     </div>
                                     <Button
@@ -264,14 +259,14 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                             <Heart
                                                 className={cn(
                                                     'h-5 w-5',
-                                                    favorites.has(template.id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
+                                                    template.isFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
                                                 )}
                                             />
                                         </button>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2">
                                                 <h3 className="text-base font-semibold text-foreground">{template.name}</h3>
-                                                <span className="text-xs text-muted-foreground">by {template.author.name}</span>
+                                                <span className="text-xs text-muted-foreground">by {template.author?.name || '系统'}</span>
                                             </div>
                                             <p className="text-sm text-muted-foreground mt-0.5">{template.description || '暂无描述'}</p>
                                         </div>
@@ -280,11 +275,11 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                             <span className="flex items-center gap-1">
                                                 <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                                                {template.rating}
+                                                {template.rating?.toFixed(1) || '0.0'}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 <Download className="h-4 w-4" />
-                                                {formatDownloads(template.downloads)}
+                                                {formatDownloads(template.downloads || 0)}
                                             </span>
                                         </div>
                                         <Button
@@ -301,6 +296,209 @@ export function TemplateMarketPage({ onUseTemplate }: TemplateMarketPageProps) {
                     ))}
                 </div>
             )}
+
+            {/* 创建模板弹窗 */}
+            {showCreateModal && (
+                <CreateTemplateModal
+                    onClose={() => setShowCreateModal(false)}
+                    onSubmit={handleCreateTemplate}
+                />
+            )}
+        </div>
+    )
+}
+
+// 创建模板弹窗组件
+interface CreateTemplateModalProps {
+    onClose: () => void
+    onSubmit: (data: { name: string; description: string; category: string; fields: DataField[]; tags: string[] }) => Promise<void>
+}
+
+function CreateTemplateModal({ onClose, onSubmit }: CreateTemplateModalProps) {
+    const [name, setName] = useState('')
+    const [description, setDescription] = useState('')
+    const [category, setCategory] = useState('other')
+    const [tagsInput, setTagsInput] = useState('')
+    const [fields, setFields] = useState<DataField[]>([
+        { id: '1', name: '', type: 'string' }
+    ])
+    const [submitting, setSubmitting] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
+    const dataTypes = [
+        { id: 'string', name: '字符串' },
+        { id: 'integer', name: '整数' },
+        { id: 'float', name: '浮点数' },
+        { id: 'boolean', name: '布尔值' },
+        { id: 'uuid', name: 'UUID' },
+        { id: 'email', name: '邮箱' },
+        { id: 'chineseName', name: '中文姓名' },
+        { id: 'chinesePhone', name: '手机号' },
+        { id: 'chineseAddress', name: '中文地址' },
+        { id: 'date', name: '日期' },
+        { id: 'datetime', name: '日期时间' },
+        { id: 'amount', name: '金额' },
+        { id: 'bankCard', name: '银行卡号' },
+    ]
+
+    const addField = () => {
+        setFields([...fields, { id: String(Date.now()), name: '', type: 'string' }])
+    }
+
+    const removeField = (id: string) => {
+        if (fields.length > 1) {
+            setFields(fields.filter(f => f.id !== id))
+        }
+    }
+
+    const updateField = (id: string, key: keyof DataField, value: string) => {
+        setFields(fields.map(f => f.id === id ? { ...f, [key]: value } : f))
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        
+        if (!name.trim()) {
+            setError('请输入模板名称')
+            return
+        }
+        
+        const validFields = fields.filter(f => f.name.trim())
+        if (validFields.length === 0) {
+            setError('请至少添加一个字段')
+            return
+        }
+
+        const tags = tagsInput.split(/[,，\s]+/).filter(t => t.trim())
+
+        try {
+            setSubmitting(true)
+            setError(null)
+            await onSubmit({
+                name: name.trim(),
+                description: description.trim(),
+                category,
+                fields: validFields,
+                tags
+            })
+        } catch (err: any) {
+            setError(err.message || '创建失败')
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>创建模板</CardTitle>
+                    <button onClick={onClose} className="p-1 rounded hover:bg-secondary">
+                        <X className="h-5 w-5" />
+                    </button>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {error && (
+                            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+                                {error}
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">模板名称 *</label>
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="例如：用户注册数据"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">描述</label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="模板用途说明..."
+                                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground resize-none h-20"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">分类</label>
+                                <select
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                                >
+                                    {categories.filter(c => c.id !== 'all').map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">标签</label>
+                                <Input
+                                    value={tagsInput}
+                                    onChange={(e) => setTagsInput(e.target.value)}
+                                    placeholder="用逗号分隔，如：用户,注册"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium">字段配置 *</label>
+                                <Button type="button" size="sm" variant="ghost" onClick={addField}>
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    添加字段
+                                </Button>
+                            </div>
+                            <div className="space-y-2 max-h-60 overflow-auto">
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground w-6">{index + 1}</span>
+                                        <Input
+                                            value={field.name}
+                                            onChange={(e) => updateField(field.id, 'name', e.target.value)}
+                                            placeholder="字段名"
+                                            className="flex-1"
+                                        />
+                                        <select
+                                            value={field.type}
+                                            onChange={(e) => updateField(field.id, 'type', e.target.value)}
+                                            className="px-3 py-2 border border-border rounded-lg bg-background text-foreground w-32"
+                                        >
+                                            {dataTypes.map(dt => (
+                                                <option key={dt.id} value={dt.id}>{dt.name}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeField(field.id)}
+                                            className="p-2 text-muted-foreground hover:text-destructive"
+                                            disabled={fields.length === 1}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-4 border-t">
+                            <Button type="button" variant="ghost" onClick={onClose}>
+                                取消
+                            </Button>
+                            <Button type="submit" variant="primary" disabled={submitting}>
+                                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                创建模板
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
     )
 }
