@@ -1,2 +1,35 @@
 backend/venv/
 frontend/node_modules/
+skills/
+
+# 数据库文件
+backend/data/app.db
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 测试
+.pytest_cache/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 环境变量
+.env
+.env.local
+
+# 日志
+*.log
+
+# 临时文件
+*.tmp
+.DS_Store
