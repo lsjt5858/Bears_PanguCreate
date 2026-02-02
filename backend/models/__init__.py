@@ -13,6 +13,8 @@ from .project import Project, project_members
 from .history import GenerationHistory
 from .template import Template as TemplateModel, Tag, TemplateRating, TemplateFavorite, TemplateDownload
 from .datasource import DataSource
+from .api_key import ApiKey
+from .scheduled_task import ScheduledTask
 from .notification import Notification
 from .webhook import Webhook
 from .audit_log import AuditLog
