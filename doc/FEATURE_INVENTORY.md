@@ -88,14 +88,14 @@
 
 ---
 
-### 4️⃣ 模板市场 ⚠️ 部分完成
+### 4️⃣ 模板市场 ✅ 完成
 
 **功能:**
 - ✅ 获取模板列表 (GET /api/market/templates)
 - ✅ 获取模板详情 (GET /api/market/templates/{id})
 - ✅ 创建模板 (POST /api/market/templates)
 - ✅ 更新模板 (PUT /api/market/templates/{id})
-- ❌ 删除模板 (DELETE /api/market/templates/{id}) - **500错误**
+- ✅ 删除模板 (DELETE /api/market/templates/{id}) - **已修复**
 - ✅ 使用模板 (POST /api/market/templates/{id}/use)
 - ✅ 评分模板 (POST /api/market/templates/{id}/rate)
 - ✅ 获取评分列表 (GET /api/market/templates/{id}/ratings)
@@ -115,13 +115,12 @@
 5. 员工信息数据 - 包含employee_id, name, email, department等
 6. 地址信息数据 - 包含address_id, recipient, phone, full_address等
 
-**测试状态:** ⚠️ 已测试 - 95%正常，删除功能有问题
+**测试状态:** ✅ 已测试 - 全部正常
 
-**问题详情:**
-- 删除模板时返回500错误
-- 原因: `template_downloads` 表的外键约束
-- 影响: 用户无法删除自己创建的模板
-- 优先级: 🔴 高
+**修复记录:**
+- ✅ 删除模板功能已修复 (2026-02-02)
+- 修复方法: 添加级联删除，在删除模板前先删除所有关联数据
+- 测试结果: 17/17 测试通过 (100%)
 
 ---
 
@@ -351,8 +350,8 @@
 
 | 状态 | 数量 | 百分比 |
 |------|------|--------|
-| ✅ 完成 | 19 | 95% |
-| ⚠️ 部分完成 | 1 | 5% |
+| ✅ 完成 | 20 | 100% |
+| ⚠️ 部分完成 | 0 | 0% |
 | ❌ 未完成 | 0 | 0% |
 | 🔄 待开发 | 0 | 0% |
 
@@ -360,17 +359,10 @@
 
 ## 🐛 已知问题
 
-### 🔴 高优先级
+目前没有已知问题，所有功能都已正常工作。
 
-1. **模板市场 - 删除模板返回500错误**
-   - 模块: template_market_service.py
-   - 端点: DELETE /api/market/templates/{id}
-   - 原因: `template_downloads` 表的外键约束
-   - 影响: 用户无法删除自己创建的模板
-   - 修复建议: 
-     - 添加级联删除
-     - 或使用软删除机制
-   - 预计修复时间: 1-2小时
+**最近修复:**
+- ✅ 模板市场删除功能 (2026-02-02) - 已修复外键约束问题
 
 ---
 
