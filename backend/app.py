@@ -119,13 +119,20 @@ def create_app(config_class=None):
     scheduler_service.init_scheduler(app)
     
     # 初始化默认模板（首次运行时）
-    with app.app_context():
-        from services.template_market_service import template_market_service
-        from models import User
-        # 获取管理员用户，如果没有则使用 ID 1
-        admin = User.query.filter_by(is_admin=True).first()
-        admin_id = admin.id if admin else 1
-        template_market_service.init_default_templates(admin_id)
+    # 注意：如果数据库未初始化，这里会失败，这是正常的
+    # 请先运行 python database/init_db.py 初始化数据库
+    try:
+        with app.app_context():
+            from services.template_market_service import template_market_service
+            from models import User
+            # 获取管理员用户，如果没有则使用 ID 1
+            admin = User.query.filter_by(is_admin=True).first()
+            admin_id = admin.id if admin else 1
+            template_market_service.init_default_templates(admin_id)
+    except Exception as e:
+        # 数据库未初始化或连接失败，跳过模板初始化
+        print(f"⚠️  跳过模板初始化: {str(e)}")
+        print("💡 如果是首次运行，请执行: python database/init_db.py")
     
     # 健康检查端点
     @app.route("/api/health", methods=["GET"])
