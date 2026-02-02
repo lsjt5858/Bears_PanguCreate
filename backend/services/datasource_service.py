@@ -172,15 +172,23 @@ class DataSourceService:
         
         try:
             if ds_type == 'mysql':
-                return self._test_mysql(datasource)
+                success, message, info = self._test_mysql(datasource)
             elif ds_type == 'postgresql':
-                return self._test_postgresql(datasource)
+                success, message, info = self._test_postgresql(datasource)
             elif ds_type == 'mongodb':
-                return self._test_mongodb(datasource)
+                success, message, info = self._test_mongodb(datasource)
             elif ds_type == 'restapi':
-                return self._test_restapi(datasource)
+                success, message, info = self._test_restapi(datasource)
             else:
                 return False, f"不支持的数据源类型: {ds_type}", None
+            
+            # 🆕 根据测试结果更新状态
+            if success:
+                datasource.update_status('connected')
+            else:
+                datasource.update_status('error', message)
+            
+            return success, message, info
         except Exception as e:
             datasource.update_status('error', str(e))
             return False, str(e), None
