@@ -193,24 +193,99 @@ class DataTypeService:
         return self.DATA_TYPES
 
     def get_types_by_category(self, category: str) -> List[Dict[str, Any]]:
-        """按分类获取数据类型"""
-        return [t for t in self.DATA_TYPES if t["category"] == category]
+        """
+        按分类获取数据类型
+        
+        Args:
+            category: 分类ID
+        
+        Returns:
+            该分类下的所有数据类型
+        """
+        return [t for t in self.DATA_TYPES if t.get("category") == category]
 
     def get_type_by_id(self, type_id: str) -> Optional[Dict[str, Any]]:
-        """根据ID获取数据类型"""
-        return next((t for t in self.DATA_TYPES if t["id"] == type_id), None)
+        """
+        根据ID获取数据类型
+        
+        Args:
+            type_id: 数据类型ID
+        
+        Returns:
+            数据类型信息，如果不存在返回None
+        """
+        return next((t for t in self.DATA_TYPES if t.get("id") == type_id), None)
 
     def get_categories(self) -> List[Dict[str, str]]:
-        """获取所有分类"""
-        categories = list(set(t["category"] for t in self.DATA_TYPES))
-        return [
-            {
-                "id": cat,
-                "name": self.CATEGORY_NAMES.get(cat, cat),
-                "count": len(self.get_types_by_category(cat))
+        """
+        获取所有分类及统计信息
+        
+        Returns:
+            分类列表，包含ID、名称和数量
+        """
+        # 获取所有唯一分类
+        categories = {}
+        for data_type in self.DATA_TYPES:
+            cat = data_type.get("category")
+            if cat:
+                if cat not in categories:
+                    categories[cat] = 0
+                categories[cat] += 1
+        
+        # 构建结果列表，保持顺序
+        result = []
+        for cat_id, cat_name in self.CATEGORY_NAMES.items():
+            if cat_id in categories:
+                result.append({
+                    "id": cat_id,
+                    "name": cat_name,
+                    "count": categories[cat_id]
+                })
+        
+        return result
+    
+    def search_types(self, keyword: str) -> List[Dict[str, Any]]:
+        """
+        搜索数据类型
+        
+        Args:
+            keyword: 搜索关键词
+        
+        Returns:
+            匹配的数据类型列表
+        """
+        if not keyword:
+            return self.DATA_TYPES
+        
+        keyword_lower = keyword.lower()
+        results = []
+        
+        for data_type in self.DATA_TYPES:
+            # 在ID、名称、描述中搜索
+            if (keyword_lower in data_type.get("id", "").lower() or
+                keyword_lower in data_type.get("name", "").lower() or
+                keyword_lower in data_type.get("description", "").lower()):
+                results.append(data_type)
+        
+        return results
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """
+        获取数据类型统计信息
+        
+        Returns:
+            统计信息字典
+        """
+        categories = self.get_categories()
+        
+        return {
+            "total_types": len(self.DATA_TYPES),
+            "total_categories": len(categories),
+            "categories": categories,
+            "types_by_category": {
+                cat["id"]: cat["count"] for cat in categories
             }
-            for cat in categories
-        ]
+        }
 
 
 # 单例实例
