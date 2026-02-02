@@ -83,7 +83,26 @@ class TemplateMarketService:
         if template.author_id != user_id:
             return False, "无权删除此模板"
         
+        # 删除关联数据（级联删除）
+        # 1. 删除下载记录
+        TemplateDownload.query.filter_by(template_id=template.id).delete()
+        
+        # 2. 删除评分记录
+        TemplateRating.query.filter_by(template_id=template.id).delete()
+        
+        # 3. 删除收藏记录
+        TemplateFavorite.query.filter_by(template_id=template.id).delete()
+        
+        # 4. 更新标签使用计数
+        for tag in template.tags:
+            tag.usage_count = max(0, tag.usage_count - 1)
+        
+        # 5. 提交关联数据的删除
+        db.session.commit()
+        
+        # 6. 删除模板本身
         template.delete()
+        
         return True, None
     
     def get_template(self, template_id: str, user_id: int = None) -> Optional[Dict[str, Any]]:
