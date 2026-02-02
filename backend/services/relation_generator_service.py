@@ -1,104 +1,192 @@
-
+"""
+关系数据生成服务
+负责生成具有关联关系的多表数据
+"""
 from services.data_generator_service import data_generator_service
 import random
-import uuid
+from typing import List, Dict, Any
+
 
 class RelationGeneratorService:
-    def generate_relation_data(self, tables, relations):
+    """关系数据生成服务"""
+    
+    def generate_relation_data(self, tables: List[Dict[str, Any]], relations: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
         """
         生成关联数据
-        :param tables: list of dict, 每个表的配置 {id, name, count, fields}
-        :param relations: list of dict, 关系配置 {sourceTable, sourceColumn, targetTable, targetColumn, relationType}
-        :return: dict, {tableName: [rows]}
-        """
-        result_data = {}
         
-        # 1. 首先生成所有表的基础数据（不包含外键）
+        Args:
+            tables: 表配置列表，每个表包含 {id, name, count, fields}
+                - id: 表ID
+                - name: 表名
+                - count: 生成行数
+                - fields: 字段列表 [{id, name, type}]
+            relations: 关系配置列表 {sourceTable, sourceColumn, targetTable, targetColumn, relationType}
+                - sourceTable: 源表名（主表）
+                - sourceColumn: 源表关联列
+                - targetTable: 目标表名（从表）
+                - targetColumn: 目标表外键列
+                - relationType: 关系类型 (one-to-one, one-to-many, many-to-many)
+        
+        Returns:
+            dict: {tableName: [rows]} 每个表的生成数据
+        """
+        if not tables:
+            return {}
+        
+        result_data = {}
         table_map = {t['name']: t for t in tables}
         
-        # 确定生成顺序（拓扑排序的简化版，这里先假设这里没有循环依赖且用户定义顺序合理，或者先生成所有主数据后再填补外键）
-        # 更好的策略：先生成所有非外键数据，再处理外键关联
-        
+        # 1. 首先生成所有表的基础数据
         for table in tables:
-            # 过滤掉作为外键的目标列，这些列的数据需要后续根据关系生成
-            # 但 DataGeneratorService 需要知道所有列。
-            # 策略：先让 DataGeneratorService 生成所有数据，对于外键列，我们稍后覆盖它们。
+            table_name = table.get('name')
+            if not table_name:
+                continue
             
-            # 转换 fields 格式以匹配 DataGeneratorService
-            # 前端 fields包含 id, name, type. 后端需要 type, name, options
-            # 注意：前端 RelationPage 的 fields 只有简单的 id, name, type。需要适配。
-            
-            gen_fields = []
+            # 标记外键列（这些列的值将在后续步骤中被关系数据覆盖）
             fk_columns = set()
-            
-            # 找出该表作为目标表的所有关系，标记外键列
             for rel in relations:
-                if rel['targetTable'] == table['name']:
-                    fk_columns.add(rel['targetColumn'])
+                if rel.get('targetTable') == table_name:
+                    fk_columns.add(rel.get('targetColumn'))
             
-            for field in table['fields']:
-                # 如果是外键列，暂时作为 string 生成，稍后覆盖
-                # 或者可以传递特殊类型给 DataGenerator? 不，直接生成即可，反正要覆盖。
-                gen_fields.append({
-                    "name": field['name'],
-                    "type": field['type'],
-                    "options": {}
-                })
+            # 转换字段格式以匹配 DataGeneratorService
+            gen_fields = []
+            for field in table.get('fields', []):
+                field_name = field.get('name')
+                field_type = field.get('type', 'string')
+                
+                if field_name:
+                    gen_fields.append({
+                        "name": field_name,
+                        "type": field_type
+                    })
             
-            rows = data_generator_service.generate_data(gen_fields, table['count'])
-            result_data[table['name']] = rows
-            
-        # 2. 处理关系，填充/覆盖外键数据
+            # 生成表数据
+            if gen_fields:
+                rows = data_generator_service.generate_data(gen_fields, table.get('count', 10))
+                result_data[table_name] = rows
+            else:
+                result_data[table_name] = []
+        
+        # 2. 处理关系，填充外键数据
         for rel in relations:
-            source_table_name = rel['sourceTable']
-            target_table_name = rel['targetTable']
-            source_col = rel['sourceColumn']
-            target_col = rel['targetColumn']
-            rel_type = rel['relationType']
-            
-            if source_table_name not in result_data or target_table_name not in result_data:
-                continue
-                
-            source_rows = result_data[source_table_name]
-            target_rows = result_data[target_table_name]
-            
-            # 获取源表的所有可用 ID (或其他关联键)
-            source_keys = [row.get(source_col) for row in source_rows]
-            
-            if not source_keys:
-                continue
-                
-            if rel_type == 'one-to-one':
-                # 一对一：目标表的每一行对应源表的一个唯一行
-                # 如果目标表行数 > 源表行数，则无法唯一，只能循环或报错。这里选择循环使用但尽量唯一。
-                # 实际上 1:1 通常要求行数一致。我们这里打乱源key然后赋值。
-                shuffled_keys = source_keys.copy()
-                random.shuffle(shuffled_keys)
-                
-                for i, row in enumerate(target_rows):
-                    key = shuffled_keys[i % len(shuffled_keys)]
-                    row[target_col] = key
-                    
-            elif rel_type == 'one-to-many':
-                # 一对多：目标表的每一行关联到源表的一个行（源表是"一"，目标表是"多"）
-                # 例如 User(1) -> Orders(N)。Order 表中的 user_id 从 User 表 id 中随机选。
-                for row in target_rows:
-                    row[target_col] = random.choice(source_keys)
-                    
-            elif rel_type == 'many-to-many':
-                # 多对多：通常不直接修改这两个表，而是应该有一个中间表。
-                # 但如果用户的配置是直接连，这通常是不合逻辑的物理模型。
-                # 假设用户想模拟的是：通过某种方式关联。
-                # 对于标准的多对多，通常是生成第三张表。
-                # 但此处的 UI 只有 "表" 和 "关系"。如果这是逻辑关系，生成数据时如何体现？
-                # 如果用户定义了 T1 和 T2 多对多，且指定了 T1.id 和 T2.uid... 这在物理上通常意味着 T2 有个 uid 指向 T1，但这只是 1:N。
-                # 如果是 T1 和 T2 多对多，通常意味着存在 T3 (T1_id, T2_id)。
-                # 鉴于此工具的简单性，如果用户选择了多对多，我们是否应该自动生成中间表数据并返回？
-                # 或者，暂不支持自动生成中间表，只支持 FK 填充。
-                # 我们按照 1:N 处理 FK 填充。因为物理上必须是 1:N (外键在目标表)。
-                for row in target_rows:
-                    row[target_col] = random.choice(source_keys)
-
+            try:
+                self._apply_relation(result_data, rel)
+            except Exception as e:
+                print(f"应用关系时出错: {e}")
+                # 继续处理其他关系
+        
         return result_data
+    
+    def _apply_relation(self, result_data: Dict[str, List[Dict[str, Any]]], relation: Dict[str, Any]) -> None:
+        """
+        应用单个关系到数据中
+        
+        Args:
+            result_data: 已生成的表数据
+            relation: 关系配置
+        """
+        source_table_name = relation.get('sourceTable')
+        target_table_name = relation.get('targetTable')
+        source_col = relation.get('sourceColumn')
+        target_col = relation.get('targetColumn')
+        rel_type = relation.get('relationType', 'one-to-many')
+        
+        # 验证表和列是否存在
+        if source_table_name not in result_data or target_table_name not in result_data:
+            print(f"警告: 表 {source_table_name} 或 {target_table_name} 不存在")
+            return
+        
+        source_rows = result_data[source_table_name]
+        target_rows = result_data[target_table_name]
+        
+        if not source_rows or not target_rows:
+            print(f"警告: 表 {source_table_name} 或 {target_table_name} 没有数据")
+            return
+        
+        # 获取源表的所有关联键值
+        source_keys = []
+        for row in source_rows:
+            if source_col in row:
+                source_keys.append(row[source_col])
+        
+        if not source_keys:
+            print(f"警告: 源表 {source_table_name} 的列 {source_col} 没有数据")
+            return
+        
+        # 根据关系类型填充外键
+        if rel_type == 'one-to-one':
+            # 一对一：目标表的每一行对应源表的一个唯一行
+            shuffled_keys = source_keys.copy()
+            random.shuffle(shuffled_keys)
+            
+            for i, row in enumerate(target_rows):
+                key = shuffled_keys[i % len(shuffled_keys)]
+                row[target_col] = key
+        
+        elif rel_type == 'one-to-many':
+            # 一对多：目标表的每一行关联到源表的一个行（源表是"一"，目标表是"多"）
+            # 例如 User(1) -> Orders(N)
+            for row in target_rows:
+                row[target_col] = random.choice(source_keys)
+        
+        elif rel_type == 'many-to-many':
+            # 多对多：在物理实现上通常需要中间表
+            # 这里简化处理为一对多（每个目标行随机关联一个源行）
+            # 注意：真正的多对多关系需要额外的关联表
+            for row in target_rows:
+                row[target_col] = random.choice(source_keys)
+        
+        else:
+            print(f"警告: 不支持的关系类型 {rel_type}")
+    
+    def validate_relations(self, tables: List[Dict[str, Any]], relations: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        验证关系配置的有效性
+        
+        Args:
+            tables: 表配置列表
+            relations: 关系配置列表
+        
+        Returns:
+            dict: 验证结果 {valid: bool, errors: []}
+        """
+        errors = []
+        table_names = {t.get('name') for t in tables if t.get('name')}
+        
+        # 构建表的字段映射
+        table_fields = {}
+        for table in tables:
+            table_name = table.get('name')
+            if table_name:
+                table_fields[table_name] = {f.get('name') for f in table.get('fields', []) if f.get('name')}
+        
+        # 验证每个关系
+        for i, rel in enumerate(relations):
+            source_table = rel.get('sourceTable')
+            target_table = rel.get('targetTable')
+            source_col = rel.get('sourceColumn')
+            target_col = rel.get('targetColumn')
+            
+            # 检查表是否存在
+            if source_table not in table_names:
+                errors.append(f"关系 {i+1}: 源表 '{source_table}' 不存在")
+            
+            if target_table not in table_names:
+                errors.append(f"关系 {i+1}: 目标表 '{target_table}' 不存在")
+            
+            # 检查列是否存在
+            if source_table in table_fields and source_col not in table_fields[source_table]:
+                errors.append(f"关系 {i+1}: 源表 '{source_table}' 中不存在列 '{source_col}'")
+            
+            if target_table in table_fields and target_col not in table_fields[target_table]:
+                errors.append(f"关系 {i+1}: 目标表 '{target_table}' 中不存在列 '{target_col}'")
+        
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors
+        }
 
+
+# 单例实例
 relation_generator_service = RelationGeneratorService()
+
