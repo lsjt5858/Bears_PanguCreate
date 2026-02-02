@@ -95,9 +95,10 @@ class ProductionConfig(Config):
     SQLALCHEMY_ECHO = False
     
     # 生产环境必须设置 SECRET_KEY 环境变量
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    if not SECRET_KEY or SECRET_KEY == 'dev-secret-key-change-in-production':
-        raise ValueError("生产环境必须设置 SECRET_KEY 环境变量！")
+    def __init__(self):
+        super().__init__()
+        if not os.environ.get('SECRET_KEY') or os.environ.get('SECRET_KEY') == 'dev-secret-key-change-in-production':
+            raise ValueError("生产环境必须设置 SECRET_KEY 环境变量！")
 
 
 # 配置映射
