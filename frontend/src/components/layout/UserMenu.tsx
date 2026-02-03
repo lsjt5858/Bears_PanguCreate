@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, User, Settings, Key, LogOut, Shield } from 'lucide-react'
+import { ChevronDown, User, Settings, Key, LogOut, Shield, LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 
@@ -45,7 +45,10 @@ export function UserMenu({ onProfileClick, onApiKeysClick, onSettingsClick }: Us
     const displayName = user.nickname || user.username || '用户'
     const displayEmail = user.email
 
-    const menuItems = [
+    const menuItems: Array<
+        | { icon: LucideIcon; label: string; onClick?: () => void; danger?: boolean }
+        | { divider: true }
+    > = [
         { icon: User, label: '个人资料', onClick: onProfileClick },
         { icon: Key, label: 'API 密钥', onClick: onApiKeysClick },
         { icon: Settings, label: '设置', onClick: onSettingsClick },
@@ -95,26 +98,23 @@ export function UserMenu({ onProfileClick, onApiKeysClick, onSettingsClick }: Us
                             if ('divider' in item && item.divider) {
                                 return <div key={index} className="my-1 border-t border-border" />
                             }
-                            // @ts-ignore
                             const Icon = item.icon
+                            if (!Icon) return null
                             return (
                                 <button
                                     key={index}
                                     onClick={() => {
-                                        // @ts-ignore
                                         item.onClick?.()
                                         setIsOpen(false)
                                     }}
                                     className={cn(
                                         'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors',
-                                        // @ts-ignore
                                         item.danger
                                             ? 'text-destructive hover:bg-destructive/10'
                                             : 'text-foreground hover:bg-secondary'
                                     )}
                                 >
                                     <Icon className="h-4 w-4" />
-                                    {/* @ts-ignore */}
                                     {item.label}
                                 </button>
                             )
