@@ -95,11 +95,10 @@ export function UserMenu({ onProfileClick, onApiKeysClick, onSettingsClick }: Us
                     {/* 菜单项 */}
                     <div className="py-1">
                         {menuItems.map((item, index) => {
-                            if ('divider' in item && item.divider) {
+                            if ('divider' in item) {
                                 return <div key={index} className="my-1 border-t border-border" />
                             }
                             const Icon = item.icon
-                            if (!Icon) return null
                             return (
                                 <button
                                     key={index}
